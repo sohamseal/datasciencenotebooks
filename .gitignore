@@ -17,3 +17,5 @@ venv/
 # IDE files
 .vscode/
 .idea/
+maximizing_revenue.py
+.ropeproject/
