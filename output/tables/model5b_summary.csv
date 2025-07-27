@@ -1,0 +1,7 @@
+"Variable","Coefficient","Std_Error","t_value","p_value","Significance"
+"(Intercept)",0.0186906284256402,0.00128062423086914,14.5949357938941,4.21792621571938e-48,"***"
+"house_environment",0.115734453481321,0.00207747596891873,55.7091659363733,0,"***"
+"R-squared",0.0829737923607514,NA,NA,NA,""
+"Adj. R-squared",0.0829470569028027,NA,NA,NA,""
+"F-statistic",3103.51116932676,NA,NA,NA,""
+"Observations",34302,NA,NA,NA,""

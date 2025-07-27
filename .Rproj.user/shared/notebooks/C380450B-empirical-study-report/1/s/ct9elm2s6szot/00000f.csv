@@ -1,0 +1,3 @@
+"0","model4a_summary <- read_csv(here(""output"", ""tables"", ""model4a_summary.csv""))"
+"0","model4b_summary <- read_csv(here(""output"", ""tables"", ""model4b_summary.csv""))"
+"0","kable(model4a_summary, caption = ""Model4a Summary"", booktabs = TRUE)"

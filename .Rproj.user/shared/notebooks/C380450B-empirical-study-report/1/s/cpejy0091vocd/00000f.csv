@@ -1,0 +1,15 @@
+"0","library(here)"
+"0",""
+"0","model_summaries <- read_csv(here(""output"", ""tables"", ""regression_models_summary.csv""))"
+"2","[1mRows: [22m[34m85[39m [1mColumns: [22m[34m8[39m"
+"2","[36m──[39m [1mColumn specification[22m [36m───────────────────────────────────────────────────────────[39m
+[1mDelimiter:[22m "",""
+[31mchr[39m (2): Model, term
+[32mdbl[39m (6): estimate, std.error, statistic, p.value, conf.low, conf.high"
+"2","
+[36mℹ[39m Use `spec()` to retrieve the full column specification for this data.
+[36mℹ[39m Specify the column types or set `show_col_types = FALSE` to quiet this message."
+"0","# Now display it"
+"0","kable(model_summaries, "
+"0","      caption = ""Regression Models of Responsible Social Contribution"","
+"0","      booktabs = TRUE)"

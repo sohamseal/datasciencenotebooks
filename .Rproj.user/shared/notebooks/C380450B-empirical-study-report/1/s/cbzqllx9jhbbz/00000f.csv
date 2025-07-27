@@ -1,0 +1,8 @@
+"0","library(here)"
+"0",""
+"0","model_summaries <- read_csv(here(""output"", ""tables"", ""regression_models_summary.csv""))"
+"0",""
+"0","# Now display it"
+"0","kable(model_summaries, "
+"0","      caption = ""Regression Models of Responsible Social Contribution"","
+"0","      booktabs = TRUE)"
