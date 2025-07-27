@@ -1,6 +1,0 @@
-[1,"Installing 'nortest' ...\n"]
-[2,"trying URL 'https://cran.r-project.org/bin/macosx/contrib/4.2/nortest_1.0-4.tgz'\n"]
-[2,"Content type 'application/x-gzip' length 36434 bytes (35 KB)\n==================================================\ndownloaded 35 KB\n\n"]
-[1,"The downloaded binary packages are in\n"]
-[1,"\t/var/folders/fn/2nn0z8517958pgb729lbv4tc0000gn/T//RtmplK1oq2/downloaded_packages\n"]
-[2,"\n\n✔ Package 'nortest' successfully installed.\n"]

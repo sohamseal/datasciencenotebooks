@@ -1,2 +1,0 @@
-"0","diagnostics_table <- read_csv(here(""output"", ""tables"", ""regression_diagnostics.csv""))"
-"0","kable(diagnostics_table, caption = ""Regression Model Diagnostics"", booktabs = TRUE)"

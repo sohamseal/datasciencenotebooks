@@ -1,1 +1,0 @@
-"0","kable(read_csv(here(""output"", ""tables"", ""model9b_summary.csv"")), caption = ""Model9b Summary"", booktabs = TRUE)"
