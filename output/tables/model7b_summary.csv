@@ -1,0 +1,7 @@
+"Variable","Coefficient","Std_Error","t_value","p_value","Significance"
+"(Intercept)",0.025490358282824,0.0012472611904179,20.4370652102816,2.78101575231564e-92,"***"
+"alternative_factors",0.364270552028585,0.00709990998903123,51.3063619949201,0,"***"
+"R-squared",0.07127473057293,NA,NA,NA,""
+"Adj. R-squared",0.0712476540344628,NA,NA,NA,""
+"F-statistic",2632.34278115383,NA,NA,NA,""
+"Observations",34302,NA,NA,NA,""

@@ -1,0 +1,157 @@
+Bibliography
+India Human Development Survey Panel (IHDS, IHDS-II), 2005, 2011-2012
+
+This bibliography includes published and unpublished works that are related 
+to ICPSR study 37382. It includes works that are based on primary
+or secondary analysis of the data, or which describe or critique those
+data or the collection methodology. 
+
+If you publish a work or know of other works that are based on these data,
+please send the complete citation and name of the ICPSR study used to:
+icpsr-biblio-notify@umich.edu 
+
+
+1. Balcazar, Carlos Felipe; Desai, Sonalde; Murgai, Rinku; Narayan, Ambar,
+"Why did poverty decline in India? A non-parametric decomposition
+exercise." In Choudhuri, Pallavi; Desai, Sonalde; Dubey, Amaresh, India's
+Social and Economic Transformation in the 21st Century. 15 - 54, London,
+UK: Routledge India,2023. DOI: 10.4324/9781003015604-2
+
+2. Bandyopadhyay, Sutirtha; Sahoo, Soham, "Sample selection models for
+panel data: Application to labor force participation in India." In
+Mukherjee, Deep, Applied Econometric Analysis Using Cross Section and Panel
+Data. Contributions to Economics. 391 - 413, Singapore: Springer Nature
+Singapore,2023. DOI: 10.1007/978-981-99-4902-1_13
+
+3. Bolhuis, Marijn; Rachapalli, Swapnipka; Restuccia, Diego, "Misallocation
+in Indian Agriculture." Oct 2020..
+Full text PDF: https://economics.ucr.edu/wp-content/uploads/2020/10/10-19-20-Restuccia.pdf
+
+4. Brahmanandam, N.; Nagarajan, R., "Impact of change in household
+environment condition on morbidity in India: Evidence from longitudinal
+data." PLOS One. 2021, 16, (3), e0247465. DOI: 10.1371/journal.pone.0247465
+Full text PDF: https://economics.ucr.edu/wp-content/uploads/2020/10/10-19-20-Restuccia.pdf
+
+5. Brahmanandam, N.; Nagarajan, R., "Impact of change in household hygiene
+conditions on morbidity in India: Evidence from longitudinal survey."
+Clinical Epidemiology and Global Health. Jul-Sep 2021, 11, (100793),. DOI:
+10.1016/j.cegh.2021.100793
+Full text PDF: https://economics.ucr.edu/wp-content/uploads/2020/10/10-19-20-Restuccia.pdf
+
+6. Chatterjee, Somdeep; Poddar, Prashant, "From safe motherhood to
+cognitive ability: Exploring intrahousehold and intergenerational
+spillovers." Economica. In press 2021,. DOI: 10.1111/ecca.12383
+Full text PDF: https://economics.ucr.edu/wp-content/uploads/2020/10/10-19-20-Restuccia.pdf
+
+7. Choudhuri, Pallavi; Desai, Sonalde, "Gender inequalities and household
+fuel choice in India." Journal of Cleaner Production. Aug 2020, 265,
+(121487),. DOI: 10.1016/j.jclepro.2020.121487
+Full text PDF: https://economics.ucr.edu/wp-content/uploads/2020/10/10-19-20-Restuccia.pdf
+
+8. Hossain, Babul; Reed, Megan N.; Gupta, Aashish; Goli, Srinivas; James,
+K.S., "Widow and Widower Mortality in India." Preprint. SocArXiv Papers,
+Sep 7, 2023.. DOI: 10.31235/osf.io/9ty4z
+Full text PDF: https://economics.ucr.edu/wp-content/uploads/2020/10/10-19-20-Restuccia.pdf
+
+9. Hossain, Babul; Reed, Megan N.; Gupta, Aashish; Goli, Srinivas; James,
+K.S., "Widowhood and Adult Mortality in India: Evidence from a Follow-up
+Survey of 104,774 Individuals." Presented at the Population Association of
+American (PAA) 2022 Annual Meeting, Population Association of American
+(PAA), Atlanta, GA, Apr 6-9, 2022. 112-2
+Abstract: https://paa.confex.com/paa/2022/meetingapp.cgi/Paper/26569
+
+10. Johnson, Doug, "Assessing the Assessments: Taking Stock of Learning
+Outcomes Data in India." Youtube video, Research on Improving Systems of
+Education (RISE), Jul 23, 2020.
+Full text: https://www.youtube.com/watch?v=3aYlpqvQQAk&feature=youtu.be
+
+11. Johnson, Doug; Parrado, Andres, "Assessing the Assessments: Taking
+Stock of Learning Outcomes Data in India." Presented at the RISE 2020
+Online Presentation Series, Research on Improving Systems of Education
+(RISE), Jul 23, 2020.
+Full text: https://www.riseprogramme.org/events/rise-online-presentation-series
+Full text PDF: https://riseprogramme.org/sites/default/files/inline-files/Johnson_Assessing%20the%20assessments_RISE%20version_v2.pdf
+
+12. Johri, Mira; Ng, Edmond S.W.; Sharkey, Alyssa; Bosson-Rieutort,
+Delphine; Kone, Georges K.; Subramanian, S.V., "Effects of zero-dose
+vaccination status in early childhood and level of community socioeconomic
+development on learning attainment in preadolescence in India: A
+population-based cohort study." BMJ Public Health. 2023, 1, (1), e000022.
+DOI: 10.1136/bmjph-2023-000022
+Full text: https://www.riseprogramme.org/events/rise-online-presentation-series
+Full text PDF: https://riseprogramme.org/sites/default/files/inline-files/Johnson_Assessing%20the%20assessments_RISE%20version_v2.pdf
+
+13. Kesar, Surbhi, "Economic transition, dualism and informality in India:
+Nature and patterns of household-level transitions." Review of Development
+Economics. Nov 2023, 27, (4), 2438 - 2469. DOI: 10.1111/rode.13040
+Full text: https://www.riseprogramme.org/events/rise-online-presentation-series
+Full text PDF: https://riseprogramme.org/sites/default/files/inline-files/Johnson_Assessing%20the%20assessments_RISE%20version_v2.pdf
+
+14. Kumar, Deepak; Pratap, Bhanu; Aggarwal, Archana, "Children's early
+foundational skills and education continuation in India: Heterogeneous
+analysis by caste, gender and location." World Development Perspectives.
+Jun 2023, 30, (100502),. DOI: 10.1016/j.wdp.2023.100502
+Full text: https://www.riseprogramme.org/events/rise-online-presentation-series
+Full text PDF: https://riseprogramme.org/sites/default/files/inline-files/Johnson_Assessing%20the%20assessments_RISE%20version_v2.pdf
+
+15. Mukherjee, Tista, "Crime and trust in institutions: Evidence from
+India." Applied Economics Letters. In press 2023,. DOI:
+10.1080/13504851.2022.2129564
+Full text: https://www.riseprogramme.org/events/rise-online-presentation-series
+Full text PDF: https://riseprogramme.org/sites/default/files/inline-files/Johnson_Assessing%20the%20assessments_RISE%20version_v2.pdf
+
+16. Patel, Utkarsh; Kumar, Deepak, "The Indian Energy Divide: Dissecting
+Inequalities in the Energy Transition Towards LPG." SSRN, Jul 1, 2020. DOI:
+10.2139/ssrn.3647097
+Abstract: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3647097
+
+17. Rajkhowa, Pallavi; Kubik, Zaneta, "Revisiting the relationship between
+farm mechanization and labour requirement in India." Indian Economic
+Review. In press 2021,. DOI: 10.1007/s41775-021-00120-x
+Abstract: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3647097
+
+18. Reed, M.N., "The labor force participation of Indian women before and
+after widowhood." Demographic Research. Jul-Dec 2020, 43, (24), 673 - 706.
+DOI: 10.4054/DemRes.2020.43.24
+Abstract: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3647097
+
+19. Reed, Megan N., "The gendered practices of the upwardly mobile in
+India." Social Science Research. Mar 2022, 103, (102652),. DOI:
+10.1016/j.ssresearch.2021.102652
+Abstract: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3647097
+
+20. Sedai, Ashish Kumar; Nepal, Rabindra; Jamasb, Tooraj, "Flickering
+lifelines: Electrification and household welfare in India." Energy
+Economics. Feb 2021, 94, (104975),. DOI: 10.1016/j.eneco.2020.104975
+Abstract: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3647097
+
+21. Soni, Apurv; Fahey, Nisha; Bhutta, Zulfiqar A.; Li, Wenjun; Frazier,
+Jean A.; Moore Simas, Tiffany; Nimbalkar, Somashekhar M.; Allison, Jeroan
+J., "Early childhood undernutrition, preadolescent physical growth, and
+cognitive achievement in India: A population-based cohort study." PLoS
+Medicine. 2021, 18, (10), e1003838. DOI: 10.1371/journal.pmed.1003838
+Abstract: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=3647097
+
+22. Soni, Apurv; Fahey, Nisha; Bhutta, Zulfiqar A.; Li, Wenjun; Frazier,
+Jean A.; Moore Simas, Tiffany; Nimbalkar, Somashekhar M.; Allison, Jeroan
+J., "The Effect of Early Childhood Undernutrition on Pre-Adolescent
+Physical Growth and Cognitive Achievement: Results from India's First
+Nationally Representative Panel Dataset." SSRN, Apr 2020.. DOI:
+10.2139/ssrn.3557978
+Abstract: https://ssrn.com/abstract=3557978
+
+23. Vaidya, Mugdha, "Impact of Community, Resource Scarcity and
+Environmental Exposure on Children's Human Capital Formation in Rural
+India." Dissertation, Aarhus University, 2020.
+Full text PDF: https://pure.au.dk/ws/files/202386500/PhD_dissertation_Mugdha_Vaidya.pdf
+
+24. Vikram, Kriti, "Early marriage and health among women at midlife:
+Evidence from India." Journal of Marriage and Family. Oct 2021, 83, (5),
+1480 - 1501. DOI: 10.1111/jomf.12793
+Full text PDF: https://pure.au.dk/ws/files/202386500/PhD_dissertation_Mugdha_Vaidya.pdf
+
+25. Vikram, Kriti, "Timing and frequency of fathers' migration and
+nutritional status of left-behind children in India: A life course
+approach." Population Research and Policy Review. 2023, 42, (7),. DOI:
+10.1007/s11113-023-09746-6
+Full text PDF: https://pure.au.dk/ws/files/202386500/PhD_dissertation_Mugdha_Vaidya.pdf

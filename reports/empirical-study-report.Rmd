@@ -1,0 +1,1902 @@
+---
+title: "Can Test Scores Predict Future Contribution of an Individual in Society: An Empirical Analysis in R"
+author: "Soham Seal \n Jadavpur University \n Department of Economics \n Roll no. - 002300301079"
+date: "`r Sys.Date()`"
+output_dir: "../output/reports"
+output_file: "empirical-study-report.pdf" 
+output:
+  pdf_document:
+    latex_engine: xelatex
+    toc: TRUE
+    toc_depth: 3
+    number_sections: false
+    fig_width: 7
+    fig_height: 5
+    fig_caption: true
+header-includes:
+  - \usepackage{placeins}
+  - \usepackage{booktabs}
+  - \usepackage{longtable}
+  - \usepackage{float}
+  - \usepackage{pdflscape}
+  - \usepackage{fontspec}
+  - \usepackage{unicode-math}
+  - \setmainfont{Times New Roman}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message=FALSE, warning=FALSE, fig.align = 'center')
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(readr)
+library(here)
+library(stargazer)
+library(broom)
+library(ggthemes)
+
+# Load the analysis-ready dataset and regression models
+analysis_dataset <- readRDS("/Volumes/Storage Extra/Data Science/Projects/Econometrics with R/beyond-marks-project/processed-data/preprocessed-dataset.rds")
+models <- readRDS(here("processed-data", "regression-models.rds"))
+
+# Define a theme for the coefficient plots
+theme_set(theme_minimal(base_size = 14) +
+          theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+                axis.title = element_text(face = "bold"),
+                legend.position = "none"))
+```
+
+# Introduction
+
+This report presents an empirical investigation into the factors that predict "Responsible Social Contribution." The study leverages the rich, longitudinal data from the India Human Development Survey (IHDS) to explore the relative importance of traditional academic achievement versus a broader set of "alternative" factors, such as an individual's relationship with their school and their home environment.
+
+# Project Context & Motivation
+
+The contemporary education system places overwhelming emphasis on quantifiable assessments - marks, grades, ranks, and scores. This project fundamentally challenges this paradigm by testing whether school marks performance is actually a good predictor of responsible social contribution or alternative school-life factors are superior predictors of an individual's future contribution to society compared to traditional academic marks.
+
+The research addresses a critical gap in educational policy: Are we measuring the right things? Does our marks-obsessed culture identify and nurture the individuals who ultimately become responsible contributors to society, or are we missing the actual predictors of meaningful social contribution? Do students that score more contribute more to the society? In other words, does the society need to produce more high scorers for its betterment?
+
+# Research Problem Statement
+
+**Primary Research Question**: Do traditional school marks predict an individual's capacity to become a responsible contributor to society?
+
+**Secondary Research Question**: Do alternative school-life factors do a better job at predicting an individual's capacity to become a responsible contributor to society?
+
+**Underlying Challenge**: The current education system may be fundamentally flawed in its assessment methods, potentially overlooking individuals with high social contribution potential while over-emphasizing those who excel in traditional academic metrics.
+
+# Hypothesis Framework
+
+## Core Hypothesis
+
+Alternative school-life factors (study fondness, curiosity, resilience, social integration, adaptability, etc.) are stronger predictors of responsible social contribution than quantifiable academic performance (marks, grades, ranks).
+
+## Specific Hypotheses to Test
+
+-   **H0**: School marks are significant predictors of responsible social contribution.
+-   **H1**: School marks are significant predictors of responsible social contribution.
+-   **H2**: Individual alternative school-life factors (like relation with school, child relation with school, school type, house environment) are stronger predictors than marks.
+-   **H3**: Combined alternative models show alternative factors over marks in predictive power.
+-   **H4**: The relationship holds across different demographic factors.
+
+# Objective
+
+My objective in doing this project is to dig deeper into how the society's education system works and benefits itself and is a change in policy and/or mindset necessary to foster us towards the right direction. This project should also inspire others as it is not as robust as I would like it to be due to lack of data and time constraint.
+
+# Data and Methodology
+
+## R Code
+
+    required_packages <- c(
+      "dplyr",
+      "tidyr",
+      "readr",
+      "ggplot2",
+      "psych",
+      "skimr",
+      "ggcorrplot",
+      "here",
+      "tools",
+      "rmarkdown",
+      "viridis",
+      "stargazer",
+      "ggthemes",
+      "pandoc"
+    )
+
+    # Function to check, install, and load packages
+    install_and_load_packages <- function(packages) {
+      for (package_name in packages) {
+        if (!require(package_name, character.only = TRUE)) {
+          message(paste("Installing package:", package_name))
+          install.packages(package_name, dependencies = TRUE)
+          # Try loading again after installation
+          if (!require(package_name, character.only = TRUE)) {
+            stop(paste("Failed to install and load package:", package_name, ". Please install manually."))
+          }
+        }
+      }
+    }
+
+    # Set CRAN mirror
+    options(repos = c(CRAN = "https://cran.r-project.org"))
+
+    # Call the function to install and load all required packages
+    install_and_load_packages(required_packages)
+
+    # Attaching required packages
+    library(here)
+    library(rmarkdown)
+
+    # sourcing
+    setwd(here("R"))
+
+
+    # ============================================================================
+    # STEP 1: LOAD AND PREPARE DATA
+    # ============================================================================
+
+    # Define the path to the raw IHDS data
+    raw_data_dir <- here("data", "ihds-data", "data")
+    data_files <- list.files(path = raw_data_dir, full.names = TRUE)
+
+    data <- list()
+
+    for (file_path in data_files) {
+      data_name <- tools::file_path_sans_ext(basename(file_path))
+      message(paste("  - Importing:", basename(file_path)))
+      df <- read.delim(file_path, sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+      data[[data_name]] <- df
+    }
+
+    # ============================================================================
+    # CREATE PANEL DATASET
+    # ============================================================================
+
+    # Create panel dataset using tracking information
+    panel_data <- data[["panel_individual"]]
+
+    # ============================================================================
+    # STEP 3: SAVE PANEL DATASET
+    # ============================================================================
+
+    saveRDS(panel_data, file = here("processed-data", "raw-panel-data.rds"))
+    print("Raw panel dataset saved as 'raw-panel-data.rds'")
+
+    panel_data = readRDS(here("processed-data", "raw-panel-data.rds"))
+
+    # Extracting necessary columns
+    necessary_cols = c(
+        
+        "HHBASE", # unique id for household
+        "HHSPLITID", # unique id for split household
+        "IDPERSON", # Person id, unique 12[IHDS2] or 11[IHDS1] byte string
+        "PBASE", # multisurvey Person id for each household
+        "XRO5", # age in 2005
+        "RO5", # age in 2012
+        "URBAN", # rural-urban Census 2001 for IHDS-I; 2011 for IHDS-II
+        "XRO3", # Sex - revised
+        
+        "WKANYPLUS", # work participation (farm business w|s animal) 2012
+        "XED4", # Educ: Attended school 2005
+        
+        "WKBUSINESS", # work business 2012
+        "WKSALARY", # work wage salary 2012
+        "WKFARM", # work farm 2012
+        "WKANIMAL", # work animal 2012
+        
+        # **Dependent Variable: Responsible Social Contribution**
+        
+        # **Happiness & Well-being**
+        
+        "TO2Y", # smoke, alcohol, yesno
+        "TO3", # Smoke cigarettes [IHDS2 only]
+        "TO4", # Smoke bidis or hukkah [IHDS2 only]
+        
+        # **Health**
+        
+        "BAZ", # BMI for age zscore from zanthro(US) months>=24
+        
+        "MB5", # High BP (lifestyle diseases)
+        "MB6", # Heart disease (lifestyle diseases)
+        "MB7", # Diabetes (lifestyle diseases)
+        "MB14", # Mental illness (lifestyle diseases)
+        "MB15", # STD or AIDS (diseases for lack of hygiene)
+        "MB4", # Tuberculosis (diseases for lack of hygiene)
+        "SM8", # Diarrhoea with blood (diseases for lack of hygiene)
+        
+        "MB24", # Days hosp
+        "SM17", # Days hosp
+        
+        "MB2Y", # yesno disease
+        "MB19", # yesno Treatment
+        "MB25", # Cost Dr/hosp 
+        "MB27", # Cost Medicine
+        "MB29", # Med Insurance Rs [IHDS2 only] 
+        
+        "SM2Y", # yesno sick [IHDS2 only] 
+        "SM12", # yesno Treatment 
+        "SM18", # Dr/hosp Rs 
+        "SM20", # Medicine Rs 
+        "SM22", # Med Insurance Rs [IHDS2 only] 
+        
+        # **Social Responsibility**
+        
+        "AN6", # Animal care: Frequency 
+        "AN5Y", # Animal care work (reverse coded)
+        
+        # **Productive Contribution**
+        
+        "RO7", # Primary Activity Status [IHDS2 only] 
+        "WKEARNPLUS", # Earnings est 
+        "XWKEARN", # sum ag nonag salary farm animal business 2005
+        "INCOME", # Annual individual income 2012
+        "XINCOME", # HH Annual income Rs2012
+        "COTOTAL", # Annual consumption expenditure
+        "INCBENEFITS", # all govt benefits Rs 
+        "POOR2", # Poverty 2012 Tendulkar cutoffs yesno (reverse coding required)
+        "WKDAYS", # work days /year (farm, business, wage|salary) >= 200
+        
+        # **Independent Variables**
+        
+        "ED6", # Educ: Completed Years, never,<1=0 
+        "ED8", # Educ: secondary class 
+        "XTA8B", # Test reading score 
+        "XTA9B", # Test math score 
+        "XTA10B", # Test Writing level [IHDS1 values] 
+        "XCS24Y", # Scholarship 
+        "ED13", # Educ: Degree class
+        # CONTROL:  (hh income 2005)
+        "XWKEARNPLUS", # Earnings est.: sum w|s farm business animal
+        "XED6", # Educ: Completed Years
+        
+        # **Alternative Predictors**
+        
+        # 1# **Relation with school**
+        
+        "XTA5", # Test enjoy school 
+        "XTA6", # Test teacher not nice 
+        "XCS10", # School Hrs/week 
+        "XCS11", # Homework Hrs/week
+        "XED7", # Educ: Ever repeated 
+        # CONSTRAINT: 
+        "XTA3", # test attended school
+        
+        "XCH2", # Child: School enrollment 
+        "XCH15", # Child: Average student 
+        "XCH16", # Child: School enjoyment 
+        "XCH18", # Child: Ever praised 
+        "XCH17", # Child: # Repeats
+        "XCH19", # Child: Ever beaten 
+        "XCH9", # Child: Fair(unfair) Teacher
+        "XCH10", # Child: Good Teacher
+        "XCH11", # Child: Biased Teacher
+        "ED6", # Educ: Completed Years, never,<1=0
+        # CONSTRAINT: 
+        "XCH1Y", # Child: EdHe questions
+        
+        # 2# **School type**
+        
+        "XCS4", # School type
+        "XCS25", # School fees
+        "XCS12", # Pvt Tuition Hrs/week
+        
+        # 3# **House environment**
+        
+        "HHEDUCF", # Highest female adult educ [max=15] 
+        "HHEDUCM", # Highest male adult educ [max=15] 
+        "HHLITERATE" # Any adult (or head) in hh literate
+      )
+
+    # ============================================================================
+    # CONSTRUCT COMPOSITE MEASURES
+    # ============================================================================
+
+    # 1.1 DEPENDENT VARIABLE(y): Responsible Social Contribution
+    construct_dependent_variable <- function(data) {
+      data %>%
+        mutate(
+          # Happiness & Well-being (z scale)
+          happiness_wellbeing = (
+            as.vector(scale(1 - TO2Y)) +  # smoke, alcohol, yesno (reverse coded)
+            as.vector(scale(5 - TO3)) +  # Smoke cigarettes (reverse coded)
+            as.vector(scale(5 - TO4)) # Smoke bidis or hukkah (reverse coded)
+          ) / 3,
+          
+          # Health (z scale)
+            
+            baz_indicator = coalesce(BAZ, 0),  # BMI normalized
+              
+            # --- Lifestyle Diseases (Z-Scaled) ---
+            lifestyle_diseases = coalesce(as.vector(scale({
+              # 1. Convert relevant columns to binary (0/1) using pmin(.x, 1). NA remains NA.
+              binary_lifestyle_diseases <- 
+                select(., c("MB5", "MB6", "MB7", "MB14")) %>%
+                mutate(across(everything(), ~ pmin(.x, 1, na.rm = FALSE)))
+                
+              # 2. Count the number of diseases by summing binaries (na.rm=TRUE handles NAs in sum)
+              num_lifestyle_diseases <- 
+                rowSums(binary_lifestyle_diseases, na.rm = TRUE)
+                
+              all_original_lifestyle_na <-
+                rowSums(is.na(
+                  select(., c("MB5", "MB6", "MB7", "MB14")))) == length(c("MB5", "MB6", "MB7", "MB14"))
+              num_lifestyle_diseases[all_original_lifestyle_na] <- 0
+                
+              # 4. Reverse code the count (Max possible lifestyle diseases = 4)
+              length(c("MB5", "MB6", "MB7", "MB14")) - num_lifestyle_diseases
+            })), 0),
+            
+            # --- Hygiene-related Diseases (Z-Scaled) ---
+            hygiene_diseases = coalesce(as.vector(scale({
+              # 1. Convert relevant columns to binary using pmin(.x, 1). NA remains NA.
+              binary_hygiene_diseases <- select(., c("MB15", "MB4", "SM8")) %>%
+                mutate(across(everything(), ~ pmin(.x, 1, na.rm = FALSE)))
+              
+              # 2. Count the number of diseases
+              num_hygiene_diseases <- rowSums(binary_hygiene_diseases, na.rm = TRUE)
+              
+              # 3. Refine NA handling for the count
+              all_original_hygiene_na <- 
+                rowSums(is.na(
+                  select(., c("MB15", "MB4", "SM8")))) == length(c("MB15", "MB4", "SM8"))
+              num_hygiene_diseases[all_original_hygiene_na] <- NA_real_
+              
+              # 4. Reverse code the count (Max possible hygiene diseases = 3)
+              length(c("MB15", "MB4", "SM8")) - num_hygiene_diseases
+            })), 0),
+            
+            # healthy days
+            healthy_days = coalesce(as.vector(scale({
+              # 1. Sum the days in hospital. If either MB24 or SM17 is NA, their sum will be NA.
+              days_in_hospital <- MB24 + SM17
+                
+              # 2. Get the maximum observed total days in hospital across the entire column.
+              # This serves as our 'Max_Old_Value' for reverse coding.
+              max_observed_days = max(days_in_hospital, na.rm = TRUE)
+              min_observed_days = min(days_in_hospital, na.rm = TRUE)
+                
+              # 3. Apply reverse coding: (Max observed days - Current total days)
+              # Less days in hospital should mean a higher social contribution score.
+              (max_observed_days + min_observed_days) - days_in_hospital
+            })), 0),
+              
+              # --- New: Healthcare Utilization (Z-Scaled) ---
+            healthcare_utilization = ({
+              mb_utilization_component <- case_when(
+                MB2Y == 1 ~ (coalesce(as.vector(scale(MB19)), 0) + 
+                             coalesce(as.vector(scale(MB25)), 0) + 
+                             coalesce(as.vector(scale(MB27)), 0))/3,
+                MB2Y == 0 ~ 0,
+                TRUE ~ 0
+              )
+              
+              sm_utilization_component <- case_when(
+                SM2Y == 1 ~ (coalesce(as.vector(scale(SM12)), 0) + 
+                             coalesce(as.vector(scale(SM18)), 0) + 
+                             coalesce(as.vector(scale(SM20)), 0))/3,
+                SM2Y == 0 ~ 0,
+                TRUE ~ 0
+              )
+                
+              # Combine both components. Sum will be NA if either component is NA.
+              (mb_utilization_component + sm_utilization_component)/2
+            }),
+          
+          health = (
+            
+            baz_indicator * 0.2 +
+            lifestyle_diseases * 0.1 +
+            hygiene_diseases * 0.1 +
+            healthy_days * 0.2 +
+            healthcare_utilization * 0.2
+              
+          ),
+          
+          # Animal Care (z scale)
+          animal_care = {
+            
+            an6_scaled <- as.vector(scale(.data$AN6))
+            an5y_scaled <- as.vector(scale(.data$AN5Y))
+            
+            base_weight <- 0.15
+            additional_weight <- 0.35
+            
+            effective_weight <- case_when(
+              .data$WKANIMAL <= 2 ~ base_weight,
+              .data$WKANIMAL > 2 ~ additional_weight,
+              TRUE ~ 0
+            )
+            
+            weighted_sum <- (an6_scaled * effective_weight) + (an5y_scaled * effective_weight)
+            
+            coalesce(weighted_sum, 0)
+          },
+          
+          # Productive Contribution (z scale)
+          
+          productive_contribution = ({
+            productive_contr <- case_when(
+                (RO7 <= 10 & WKDAYS >= 100 & XINCOME != 0) ~ (
+                  coalesce(as.vector(scale(WKEARNPLUS)), 0) + # Work Earnings est 2012
+                  coalesce(as.vector(scale(INCOME)), 0) + # Annual individual income 2012
+                  coalesce(as.vector(scale(XINCOME)), 0) + # HH Annual income Rs2012
+                  coalesce(as.vector(scale({COTOTAL * INCOME/XINCOME})), 0) # Annual individual consumption expenditure
+                  ) / 4,
+                TRUE ~ 0
+              )
+            productive_contr
+            }),
+          
+          # Overall Responsible Social Contribution (weighted average)
+          responsible_social_contribution = (
+            happiness_wellbeing * 0.20 +
+            health * 0.30 +
+            animal_care * 0.20 +
+            productive_contribution * 0.30
+          )
+        )
+    }
+
+    # 4.2 INDEPENDENT VARIABLES(X_0): Traditional Predictors
+    construct_traditional_predictors <- function(data) {
+      data %>%
+        mutate(
+          
+          # Individual components (z scale)
+          completed_years = coalesce(as.vector(scale(ED6)), 0),
+          secondary_class = coalesce(as.vector(scale({
+            secondary_cl = case_when(
+                ED8 == "I" ~ 3,
+                ED8 == "II" ~ 2,
+                ED8 == "III" ~ 1,
+                TRUE ~ 0
+              )
+            secondary_cl
+            })), 0),
+          reading_score = coalesce(as.vector(scale(XTA8B)), 0),
+          math_score = coalesce(as.vector(scale(XTA9B)), 0),
+          writing_level = coalesce(as.vector(scale(XTA10B)), 0), 
+          scholarship = coalesce(as.vector(scale(XCS24Y)), 0),
+          degree_class = coalesce(as.vector(scale({
+            degree_cl = case_when(
+                ED13 == "I" ~ 3,
+                ED13 == "II" ~ 2,
+                ED13 == "III" ~ 1,
+                TRUE ~ 0
+              )
+            degree_cl
+            })), 0),
+          control_predictor_trad = 
+            (coalesce(as.vector(scale(XWKEARNPLUS)), 0) + # hh income 2005
+             coalesce(as.vector(scale(XED6)), 0) # completed years 2005
+             ) / 2,
+          
+          # Academic Performance Composite (weighted average)
+          academic_performance = (
+            
+            secondary_class * 0.2 +
+            degree_class * 0.2 +
+            scholarship * 0.2 +
+            reading_score * 0.1 +
+            writing_level * 0.1 + 
+            math_score * 0.1 +
+            completed_years * 0.1
+            
+          )
+        )
+    }
+
+    # 4.3 ALTERNATIVE PREDICTORS(X_1): Alternative School-life Factors
+    construct_alternative_predictors <- function(data) {
+      data %>%
+        mutate(
+          # 1# Relation with school (z scale)
+          
+          enjoy_school = coalesce(as.vector(scale(XTA5)), 0), # Test enjoy school
+          teacher_nice = coalesce(as.vector(scale(4 - XTA6)), 0), # Test teacher not nice (reverse coded)
+          school_hrs = coalesce(as.vector(scale(XCS10)), 0), # School Hrs/week
+          homework_hrs = coalesce(as.vector(scale(XCS11)), 0), # Homework Hrs/week
+          
+          relation_with_school = (
+            
+            enjoy_school * 0.35 + # Test enjoy school
+            teacher_nice * 0.35 + # Test teacher not nice (reverse coded)
+            school_hrs * 0.20 + # School Hrs/week
+            homework_hrs * 0.10 # Homework Hrs/week
+            ),
+          
+          # 2# Child's relation with school (z scale)
+          
+          ch_teacher = (
+            coalesce(as.vector(scale(XCH9)), 0) + # Child: Fair(unfair) Teacher
+            coalesce(as.vector(scale(5 - XCH10)), 0) + # Child: Good Teacher (reverse coded)
+            coalesce(as.vector(scale(4 - XCH11)), 0) # Child: Biased Teacher (reverse coded)
+          ) / 3,
+          ch_average_student = coalesce(as.vector(scale(XCH15)), 0),  # Child: Average student
+          ch_school_enjoyment = coalesce(as.vector(scale(XCH16)), 0), # Child: School enjoyment
+          ch_resilience = (
+            coalesce(as.vector(scale(ED6)), 0) + # Educ: Completed Years
+            coalesce(as.vector(scale(XCH17)), 0) + # Child: # Repeats
+            coalesce(as.vector(scale(XCH19)), 0) # Child: Ever beaten
+          ) / 3,
+          ch_ever_praised = coalesce(as.vector(scale(XCH18)), 0), # Child: Ever praised
+          
+          child_relation_with_school = (
+            
+            ch_teacher +
+            ch_average_student +
+            ch_school_enjoyment +
+            ch_resilience +
+            ch_ever_praised
+            
+          ) / 5,
+          
+          # 3# School type (z scale)
+          
+          school_type = coalesce(as.vector(scale(XCS4)), 0), # School type
+          school_fees = coalesce(as.vector(scale(XCS25)), 0), # School fees
+          
+          school_type = (
+            school_type + # School type
+            school_fees # School fees
+          ) / 2,
+          
+          # 4# House environment (z scale)
+          
+          highest_education_female = coalesce(as.vector(scale(HHEDUCF)), 0), # Highest female adult educ [max=15]
+          highest_education_male = coalesce(as.vector(scale(HHEDUCM)), 0), # Highest male adult educ [max=15]
+          any_adult_literate = coalesce(as.vector(scale(HHLITERATE)), 0), # Any adult (or head) in hh literate
+          
+          house_environment = (
+            
+            highest_education_female + # Highest female adult educ [max=15]
+            highest_education_male + # Highest male adult educ [max=15]
+            any_adult_literate # Any adult (or head) in hh literate
+            
+          ) / 3,
+
+          alternative_factors = (
+            
+            relation_with_school +
+            child_relation_with_school +
+            school_type +
+            house_environment
+            
+          ) / 4
+          
+        )
+    }
+
+    extracted_panel_data <- panel_data %>%
+      select(
+        all_of(necessary_cols)
+      )
+
+    # Construct all composite measures
+    extracted_panel_data <- extracted_panel_data %>%
+      construct_dependent_variable() %>%
+      construct_traditional_predictors() %>%
+      construct_alternative_predictors() 
+
+    extracted_panel_data <- extracted_panel_data %>%
+      # participation (farm business w|s animal) 2012
+      filter(WKANYPLUS != 0) %>%
+      # Educ: Attended school 2005
+      filter(XED4 == 1)
+
+    # save
+    saveRDS(extracted_panel_data, file = here("processed-data", "extracted-panel-data.rds"))
+    print("Extracted and cleaned panel dataset saved as 'extracted-panel-data.rds'")
+
+    extracted_panel_data = readRDS(here("processed-data", "extracted-panel-data.rds"))
+
+    # ============================================================================
+    # PREPARE DATA FOR ANALYSIS
+    # ============================================================================
+
+    # Create analysis-ready dataset with standardized variables
+    analysis_dataset <- extracted_panel_data %>%
+      # STEP 1: Create all new factor variables using mutate()
+      mutate(
+        gender_f = factor(XRO3, levels = c(1, 2), labels = c("Male", "Female")),
+        urban_rural_f = factor(URBAN, levels = c(1, 0), labels = c("Urban", "Rural")),
+        business_f = factor(WKBUSINESS, levels = c(0, 1, 2, 3, 4), labels = c("No Business", "No Business", "No Business", "Business", "Business")),
+        salary_f = factor(WKSALARY, levels = c(0, 1, 2, 3, 4), labels = c("No Salary", "No Salary", "No Salary", "Salary", "Salary")),
+        farm_f = factor(WKFARM, levels = c(0, 1, 2, 3, 4), labels = c("No farm", "No farm", "No farm", "farm", "farm")),
+        animal_f = factor(WKANIMAL, levels = c(0, 1, 2, 3, 4), labels = c("No animal", "No animal", "No animal", "animal", "animal")),
+        work_type_f = case_when(
+          WKSALARY >= 3 ~ "Salary",
+          WKBUSINESS >= 3 ~ "Business", 
+          WKFARM >= 3 ~ "Farm",
+          WKANIMAL >= 3 ~ "Animal"
+        ) %>% factor(levels = c("Animal", "Farm", "Business", "Salary"))
+      ) %>%
+      # STEP 2: Select the final set of desired columns, including the new factors
+      select(
+        responsible_social_contribution,
+        
+        academic_performance,
+          completed_years,
+          secondary_class,
+          reading_score,
+          math_score,
+          writing_level,
+          scholarship,
+          degree_class,
+        
+        alternative_factors,
+          relation_with_school,
+            enjoy_school, # Test enjoy school
+            teacher_nice, # Test teacher not nice (reverse coded)
+            school_hrs, # School Hrs/week
+            homework_hrs, # Homework Hrs/week
+          child_relation_with_school,
+            ch_teacher,
+            ch_average_student,
+            ch_school_enjoyment,
+            ch_resilience,
+            ch_ever_praised,
+          school_type,
+          house_environment,
+        
+        control_predictor_trad,
+        
+        # Now include the new factor variables we just created in mutate()
+        gender_f,
+        urban_rural_f,
+        work_type_f
+      ) %>%
+      # STEP 3: Filter out rows where ANY of the selected columns have an NA
+      filter(!if_any(everything(), is.na))
+
+    # Save analysis-ready dataset
+    saveRDS(analysis_dataset, file = here("processed-data", "structured-dataset.rds"))
+    print("Analysis-ready dataset saved as 'structured_dataset.rds'")
+
+    print("=== DATA PREPARATION COMPLETE ===")
+    print("Ready for econometric analysis!")
+
+    # Function to ensure output directories exist
+    ensure_output_dirs <- function() {
+      output_dirs <- c(
+        here("output", "figures"),
+        here("output", "tables"),
+        here("output", "reports")
+      )
+      
+      for (dir in output_dirs) {
+        if (!dir.exists(dir)) {
+          dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+          message(paste("Created directory:", dir))
+        }
+      }
+    }
+
+    # Helper function to save plots with standardized naming and formats
+    save_plot <- function(obj, name, width = 10, height = 8, dpi = 300) {
+      # Ensure output directory exists
+      ensure_output_dirs()
+      
+      # Clean the name (remove special characters, replace spaces with underscores)
+      clean_name <- gsub("[^A-Za-z0-9_-]", "_", name)
+      clean_name <- gsub("_{2,}", "_", clean_name)  # Replace multiple underscores with single
+      clean_name <- gsub("^_|_$", "", clean_name)   # Remove leading/trailing underscores
+      
+      # Define file paths
+      png_path <- here("output", "figures", paste0(clean_name, ".png"))
+      
+      # Save as PNG
+      ggsave(filename = png_path, plot = obj, width = width, height = height, 
+             dpi = dpi, units = "in", device = "png")
+      
+      message(paste("Plot saved as:"))
+      message(paste("  PNG:", png_path))
+      
+      return(list(png = png_path))
+    }
+
+    # Helper function to save tables with standardized naming and formats
+    save_table <- function(df, name, include_rownames = FALSE) {
+      # Ensure output directory exists
+      ensure_output_dirs()
+      
+      # Clean the name (remove special characters, replace spaces with underscores)
+      clean_name <- gsub("[^A-Za-z0-9_-]", "_", name)
+      clean_name <- gsub("_{2,}", "_", clean_name)  # Replace multiple underscores with single
+      clean_name <- gsub("^_|_$", "", clean_name)   # Remove leading/trailing underscores
+      
+      # Define file paths
+      csv_path <- here("output", "tables", paste0(clean_name, ".csv"))
+      
+      # Save as CSV
+      write_csv(df, csv_path)
+      
+      message(paste("Table saved as:"))
+      message(paste("  CSV:", csv_path))
+      
+      return(list(csv = csv_path))
+    }
+
+    # function to trim outliers
+    trim_outliers_iqr <- function(data, variable_name) {
+      Q1 <- quantile(data[[variable_name]], 0.25, na.rm = TRUE)
+      Q3 <- quantile(data[[variable_name]], 0.75, na.rm = TRUE)
+      IQR_val <- Q3 - Q1
+      lower_bound <- Q1 - 1.5 * IQR_val
+      upper_bound <- Q3 + 1.5 * IQR_val
+      
+      data %>%
+        filter(!!sym(variable_name) >= lower_bound, !!sym(variable_name) <= upper_bound)
+    }
+
+    # Q-Q Plot Functions
+    qq_plot <- function(data, column_name){
+      ggplot(data = data, 
+             aes_string(sample = column_name)) +
+        stat_qq() +
+        stat_qq_line() +
+        labs(title = paste("Q-Q Plot:", tools::toTitleCase(gsub("_", " ", column_name))), 
+             x = "Theoretical Quantiles", y = "Sample Quantiles") +
+        theme_minimal()
+    }
+
+    # Load analysis dataset
+    structured_dataset = readRDS(here("processed-data", "structured-dataset.rds"))
+
+    # Create an sample analysis table for the report
+    sample_analysis_dataset = (
+      structured_dataset %>%
+        select(
+          responsible_social_contribution,
+          academic_performance,
+          relation_with_school,
+          child_relation_with_school,
+          school_type,
+          house_environment,
+          alternative_factors
+        )
+    )
+
+    save_table(head(sample_analysis_dataset), "sample_analysis_table")
+
+    # Q-Q Plots
+    qq_plot(sample_analysis_dataset, "responsible_social_contribution")
+    qq_plot(sample_analysis_dataset, "academic_performance")
+    qq_plot(sample_analysis_dataset, "relation_with_school")
+    qq_plot(sample_analysis_dataset, "child_relation_with_school")
+    qq_plot(sample_analysis_dataset, "school_type")
+    qq_plot(sample_analysis_dataset, "house_environment")
+    qq_plot(sample_analysis_dataset, "alternative_factors")
+
+    # Taking only the interquartile range of the dataset as Q-Q plots show non normality in tails
+    analysis_dataset <- structured_dataset %>%
+       trim_outliers_iqr("responsible_social_contribution")  %>%
+      trim_outliers_iqr("alternative_factors")
+
+    # Q-Q Plots
+    qq_plot(analysis_dataset, "responsible_social_contribution")
+    qq_plot(analysis_dataset, "academic_performance")
+    qq_plot(analysis_dataset, "relation_with_school")
+    qq_plot(analysis_dataset, "child_relation_with_school")
+    qq_plot(analysis_dataset, "school_type")
+    qq_plot(analysis_dataset, "house_environment")
+    qq_plot(analysis_dataset, "alternative_factors")
+
+    # Attach dataset to make variables available directly
+    attach(analysis_dataset)
+
+    # =============================================================================
+    # DESCRIPTIVE STATISTICS
+    # =============================================================================
+
+    # Key composites and controls for analysis
+    key_variables <- c(
+      "responsible_social_contribution", "academic_performance", "alternative_factors",
+      "relation_with_school", "child_relation_with_school", "school_type", 
+      "house_environment", "control_predictor_trad"
+    )
+
+    # Descriptive statistics using psych::describe()
+    descriptive_stats <- analysis_dataset %>%
+      select(all_of(key_variables)) %>%
+      psych::describe() %>%
+      as.data.frame() %>%
+      tibble::rownames_to_column("Variable") # Convert row names to a column
+
+    # Save descriptive statistics
+    save_table(descriptive_stats, "descriptive_statistics_psych")
+
+    # =============================================================================
+    # VISUALIZATION OF DESCRIPTIVE STATISTICS
+    # =============================================================================
+    # Objective: To provide a visual overview of the central tendency and variability of key variables.
+
+    # Calculate means and standard deviations for plotting
+    summary_data <- analysis_dataset %>%
+      select(all_of(key_variables)) %>%
+      summarise_all(list(mean = mean, sd = sd), na.rm = TRUE) %>%
+      pivot_longer(everything(), names_to = "Statistic", values_to = "Value") %>%
+      separate(Statistic, into = c("Variable", "Type"), sep = "_(?=[^_]*$)") %>%
+      pivot_wider(names_from = Type, values_from = Value)
+
+    # Create the dot plot with error bars
+    descriptive_plot <- ggplot(summary_data, aes(x = mean, y = reorder(Variable, mean))) +
+      geom_point(size = 4, color = "darkblue") +
+      geom_errorbarh(aes(xmin = mean - sd, xmax = mean + sd), height = 0.2, color = "gray60") +
+      labs(title = "Mean and Standard Deviation of Key Variables",
+           x = "Mean (with +/- 1 SD error bars)",
+           y = "Variable") +
+      theme_minimal() +
+      theme(plot.title = element_text(hjust = 0.5, face = "bold"),
+            axis.title = element_text(face = "bold"))
+
+    # Save the plot
+    save_plot(descriptive_plot, "descriptive_statistics_plot")
+
+    # =============================================================================
+    # CORRELATION MATRIX
+    # =============================================================================
+
+    # Select numeric predictors and outcome for correlation matrix
+    numeric_vars <- analysis_dataset %>%
+      select(all_of(key_variables)) %>%
+      select_if(is.numeric)
+
+    # Calculate correlation matrix
+    cor_matrix <- cor(numeric_vars, use = "complete.obs")
+
+    # Save correlation matrix as table
+    cor_df <- as.data.frame(cor_matrix)
+    cor_df$Variable <- rownames(cor_df)
+    cor_df <- cor_df %>% select(Variable, everything())
+    save_table(cor_df, "correlation_matrix")
+
+    # Create correlation heatmap
+    cor_plot <- ggcorrplot(cor_matrix, 
+                          hc.order = TRUE, 
+                          type = "lower",
+                          lab = TRUE,
+                          lab_size = 3,
+                          title = "Correlation Matrix of Key Variables",
+                          ggtheme = ggplot2::theme_minimal())
+
+    # Save correlation plot
+    save_plot(cor_plot, "correlation_heatmap")
+
+    # =============================================================================
+    # DISTRIBUTION PLOTS
+    # =============================================================================
+
+    # Get numeric variables for distribution plots
+    numeric_composites <- c("responsible_social_contribution", "academic_performance", 
+                           "alternative_factors", "relation_with_school", 
+                           "child_relation_with_school", "school_type", 
+                           "house_environment", "control_predictor_trad")
+
+    # Filter to only include variables that exist and are numeric
+    available_numeric <- numeric_composites[numeric_composites %in% names(analysis_dataset)]
+    available_numeric <- available_numeric[sapply(analysis_dataset[available_numeric], is.numeric)]
+
+    # 1. Histograms + density for each composite
+    for (var in available_numeric) {
+      hist_plot <- ggplot(analysis_dataset, aes_string(x = var)) +
+        geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.7, fill = "skyblue", color = "black") +
+        geom_density(color = "red", size = 1) +
+        labs(title = paste("Distribution of", tools::toTitleCase(gsub("_", " ", var))),
+             x = tools::toTitleCase(gsub("_", " ", var)),
+             y = "Density") +
+        theme_minimal()
+      
+      save_plot(hist_plot, paste0("histogram_", var))
+    }
+
+    # 2. Boxplots
+    for (var in available_numeric) {
+      # Boxplot by gender
+      box_gender <- ggplot(analysis_dataset, aes_string(x = "gender_f", y = var, fill = "gender_f")) +
+        geom_boxplot(alpha = 0.7) +
+        labs(title = paste("Distribution of", tools::toTitleCase(gsub("_", " ", var)), "by Gender"),
+             x = "Gender",
+             y = tools::toTitleCase(gsub("_", " ", var))) +
+        theme_minimal() +
+        theme(legend.position = "none")
+      
+      save_plot(box_gender, paste0("boxplot_", var, "_by_gender"))
+      
+      # Boxplot by urban/rural
+      box_urban <- ggplot(analysis_dataset, aes_string(x = "urban_rural_f", y = var, fill = "urban_rural_f")) +
+        geom_boxplot(alpha = 0.7) +
+        labs(title = paste("Distribution of", tools::toTitleCase(gsub("_", " ", var)), "by Location"),
+             x = "Location",
+             y = tools::toTitleCase(gsub("_", " ", var))) +
+        theme_minimal() +
+        theme(legend.position = "none")
+      
+      save_plot(box_urban, paste0("boxplot_", var, "_by_location"))
+      
+      # Boxplot by work type
+      box_urban <- ggplot(analysis_dataset, aes_string(x = "work_type_f", y = var, fill = "work_type_f")) +
+        geom_boxplot(alpha = 0.7) +
+        labs(title = paste("Distribution of", tools::toTitleCase(gsub("_", " ", var)), "by Work Type"),
+             x = "Work Type",
+             y = tools::toTitleCase(gsub("_", " ", var))) +
+        theme_minimal() +
+        theme(legend.position = "none")
+      
+      save_plot(box_urban, paste0("boxplot_", var, "_by_work_type"))
+    }
+
+    # 3. Scatter plots of each predictor vs. outcome with simple linear trend
+    outcome_var <- "responsible_social_contribution"
+    predictor_vars <- available_numeric[available_numeric != outcome_var]
+
+    for (var in predictor_vars) {
+      scatter_plot <- ggplot(analysis_dataset, aes_string(x = var, y = outcome_var)) +
+        geom_point(alpha = 0.6, color = "steelblue") +
+        geom_smooth(method = "lm", se = TRUE, color = "red") +
+        labs(title = paste("Relationship between", tools::toTitleCase(gsub("_", " ", var)), 
+                          "and", tools::toTitleCase(gsub("_", " ", outcome_var))),
+             x = tools::toTitleCase(gsub("_", " ", var)),
+             y = tools::toTitleCase(gsub("_", " ", outcome_var))) +
+        theme_minimal()
+      
+      save_plot(scatter_plot, paste0("scatter_", var, "_vs_", outcome_var))
+    }
+
+    # =============================================================================
+    # EXTENDED BIVARIATE ANALYSIS: HISTOGRAMS BY CATEGORICAL FACTORS
+    # =============================================================================
+    # Objective: To visualize the distribution of key continuous variables across different categorical groups.
+
+    # Define the continuous variables to plot
+    continuous_vars_for_hist <- c(
+      "responsible_social_contribution", 
+      "academic_performance", 
+      "relation_with_school", 
+      "child_relation_with_school", 
+      "school_type", 
+      "house_environment"
+    )
+
+    # Define the categorical variables
+    categorical_vars_for_hist <- c(
+      "gender_f", 
+      "urban_rural_f", 
+      "business_f", 
+      "work_type_f""
+    )
+
+    for (cont_var in continuous_vars_for_hist) {
+      for (cat_var in categorical_vars_for_hist) {
+        # Create histogram with density, filled by categorical variable
+        hist_plot_faceted <- ggplot(analysis_dataset, aes_string(x = cont_var, fill = cat_var)) +
+          geom_histogram(aes(y = ..density..), bins = 30, alpha = 0.7, position = "identity", color = "black") +
+          geom_density(alpha = 0.2) +
+          labs(title = paste("Distribution of", tools::toTitleCase(gsub("_", " ", cont_var)), "by", tools::toTitleCase(gsub("_", " ", cat_var))),
+               x = tools::toTitleCase(gsub("_", " ", cont_var)),
+               y = "Density") +
+          theme_minimal() +
+          theme(legend.position = "bottom")
+        
+        save_plot(hist_plot_faceted, paste0("histogram_", cont_var, "_by_", cat_var))
+      }
+    }
+
+    # =============================================================================
+    # GROUP SUMMARIES
+    # =============================================================================
+
+    # Group summaries by gender and urban_rural
+    group_summaries <- analysis_dataset %>%
+      group_by(work_type_f) %>%
+      summarise(
+        across(all_of(available_numeric), 
+               list(mean = ~round(mean(.x, na.rm = TRUE), 3),
+                    sd = ~round(sd(.x, na.rm = TRUE), 3)),
+               .names = "{.col}_{.fn}"),
+        n = n(),
+        .groups = "drop"
+      )
+
+    # Save group summaries
+    save_table(group_summaries, "group_summaries_by_work_type")
+
+    # Additional summary by gender only
+    gender_summaries <- analysis_dataset %>%
+      group_by(gender_f) %>%
+      summarise(
+        across(all_of(available_numeric), 
+               list(mean = ~round(mean(.x, na.rm = TRUE), 3),
+                    sd = ~round(sd(.x, na.rm = TRUE), 3)),
+               .names = "{.col}_{.fn}"),
+        n = n(),
+        .groups = "drop"
+      )
+
+    save_table(gender_summaries, "group_summaries_by_gender")
+
+    # Additional summary by location only
+    location_summaries <- analysis_dataset %>%
+      group_by(urban_rural_f) %>%
+      summarise(
+        across(all_of(available_numeric), 
+               list(mean = ~round(mean(.x, na.rm = TRUE), 3),
+                    sd = ~round(sd(.x, na.rm = TRUE), 3)),
+               .names = "{.col}_{.fn}"),
+        n = n(),
+        .groups = "drop"
+      )
+
+    save_table(location_summaries, "group_summaries_by_location")
+
+    # Detach dataset to avoid masking issues
+    detach(analysis_dataset)
+
+    print("=== EXPLORATORY ANALYSIS COMPLETE ===")
+    print("All tables and figures saved to /output/ directory")
+
+    # --- Utility Functions ---
+    # Source utility functions for saving tables and plots
+    if (!exists("save_table")) {
+      original_wd <- getwd()
+      setwd(here())
+      
+      ensure_output_dirs <- function() {
+        output_dirs <- c(here("output", "figures"), here("output", "tables"), here("output", "reports"))
+        for (dir in output_dirs) {
+          if (!dir.exists(dir)) {
+            dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+            message(paste("Created directory:", dir))
+          }
+        }
+      }
+      
+      setwd(original_wd)
+    }
+
+    # --- Data Loading and Preprocessing ---
+    # Load the pre-processed and analysis-ready dataset
+    analysis_dataset <- readRDS(here("processed-data", "analysis-ready-dataset.rds"))
+
+    # Create dummy variables explicitly with fastDummies
+    # Assuming gender, urban_rural, work_type are categorical; adjust names if different
+    analysis_dataset <- analysis_dataset %>%
+      dummy_cols(select_columns = c("gender_f", "urban_rural_f", "work_type_f"), 
+                 remove_first_dummy = TRUE, # Avoid multicollinearity
+                 remove_selected_columns = TRUE) # Remove original categorical columns
+
+    # Print column names to verify dummy variables
+    print("=== Dataset Columns After Dummy Coding ===")
+    print(colnames(analysis_dataset))
+
+    print("=== STARTING REGRESSION ANALYSIS ===")
+    print(paste("Sample size:", nrow(analysis_dataset)))
+
+    # =============================================================================
+    # REGRESSION MODELING
+    # =============================================================================
+    # Objective: To model the relationship between the independent variables and the
+    # dependent variable, 'responsible_social_contribution'. We will build a series of models
+    # to test the relative importance of academic vs. alternative predictors.
+    # Note: Replace dummy variable names with actual names from your dataset after dummy_cols
+
+    attach(analysis_dataset)
+
+    # --- Model 1(a): Academic Performance Only ---
+
+    model1a <- lm(responsible_social_contribution ~ academic_performance + control_predictor_trad +
+                    gender_f_Female + urban_rural_f_Rural + work_type_f_Business, data = analysis_dataset)
+
+    # --- Model 1(b): Academic Performance Only --- (Across Demographic Factors)
+    model1b <- lm(responsible_social_contribution ~ academic_performance + control_predictor_trad, data = analysis_dataset)
+
+    # --- Model 2(a): relation_with_school Only ---
+    model2a <- lm(responsible_social_contribution ~ relation_with_school +
+                    gender_f_Female + urban_rural_f_Rural + work_type_f_Business, data = analysis_dataset)
+
+    # --- Model 2(b): relation_with_school Only --- (Across Demographic Factors)
+    model2b <- lm(responsible_social_contribution ~ relation_with_school, data = analysis_dataset)
+
+    # --- Model 3(a): child_relation_with_school Only ---
+    model3a <- lm(responsible_social_contribution ~ child_relation_with_school +
+                    gender_f_Female + urban_rural_f_Rural + work_type_f_Business, data = analysis_dataset)
+
+    # --- Model 3(b): child_relation_with_school Only --- (Across Demographic Factors)
+    model3b <- lm(responsible_social_contribution ~ child_relation_with_school, data = analysis_dataset)
+
+    # --- Model 4(a): school_type Only ---
+    model4a <- lm(responsible_social_contribution ~ school_type +
+                    gender_f_Female + urban_rural_f_Rural + work_type_f_Business, data = analysis_dataset)
+
+    # --- Model 4(b): school_type Only --- (Across Demographic Factors)
+    model4b <- lm(responsible_social_contribution ~ school_type, data = analysis_dataset)
+
+    # --- Model 5(a): house_environment Only ---
+    model5a <- lm(responsible_social_contribution ~ house_environment +
+                    gender_f_Female + urban_rural_f_Rural + work_type_f_Business, data = analysis_dataset)
+
+    # --- Model 5(b): house_environment Only --- (Across Demographic Factors)
+    model5b <- lm(responsible_social_contribution ~ house_environment, data = analysis_dataset)
+
+    # --- Model 6(a): Combined Model ---
+    model6a <- lm(responsible_social_contribution ~ relation_with_school + child_relation_with_school + school_type + house_environment +
+                    gender_f_Female + urban_rural_f_Rural + work_type_f_Business, data = analysis_dataset)
+
+    # --- Model 6(b): Combined Model --- (Across Demographic Factors)
+    model6b <- lm(responsible_social_contribution ~ relation_with_school + child_relation_with_school + school_type + house_environment, data = analysis_dataset)
+
+    # --- Model 7(a): Combined Model ---
+    model7a <- lm(responsible_social_contribution ~ alternative_factors +
+                    gender_f_Female + urban_rural_f_Rural + work_type_f_Business, data = analysis_dataset)
+
+    # --- Model 7(b): Combined Model --- (Across Demographic Factors)
+    model7b <- lm(responsible_social_contribution ~ alternative_factors, data = analysis_dataset)
+
+    # --- Model 8(a): Combined Model ---
+    model8a <- lm(responsible_social_contribution ~ academic_performance +
+                    relation_with_school + child_relation_with_school + school_type + house_environment +
+                    control_predictor_trad + gender_f_Female + urban_rural_f_Rural + work_type_f_Business, data = analysis_dataset)
+
+    # --- Model 8(b): Combined Model --- (Across Demographic Factors)
+    model8b <- lm(responsible_social_contribution ~ academic_performance +
+                    relation_with_school + child_relation_with_school + school_type + house_environment +
+                    control_predictor_trad, data = analysis_dataset)
+
+    # --- Model 9(a): Combined Model ---
+    model9a <- lm(responsible_social_contribution ~ academic_performance + alternative_factors +
+                    control_predictor_trad + gender_f_Female + urban_rural_f_Rural + work_type_f_Business, data = analysis_dataset)
+
+    # --- Model 9(b): Combined Model --- (Across Demographic Factors)
+    model9b <- lm(responsible_social_contribution ~ academic_performance + alternative_factors +
+                    control_predictor_trad, data = analysis_dataset)
+
+    print("=== MODELS CREATED SUCCESSFULLY ===")
+
+    # --- Model 10: Final Model of Best Fit ---
+    # model10 <- lm(data = analysis_dataset) if time permits
+    # print("=== MODEL OF BEST FIT CREATED SUCCESSFULLY ===")
+
+    detach(analysis_dataset)
+
+    # =============================================================================
+    # MODEL DIAGNOSTICS
+    # =============================================================================
+
+    # Custom VIF function in base R
+    calculate_vif <- function(model) {
+      predictors <- names(coef(model))[-1] # Exclude intercept
+      if (length(predictors) <= 1) return(NULL) # VIF not meaningful for single predictor
+      vif_values <- numeric(length(predictors))
+      names(vif_values) <- predictors
+      for (i in seq_along(predictors)) {
+        formula <- as.formula(paste(predictors[i], "~", paste(predictors[-i], collapse = "+")))
+        temp_model <- lm(formula, data = model$model)
+        r_squared <- summary(temp_model)$r.squared
+        vif_values[i] <- 1 / (1 - r_squared)
+      }
+      return(vif_values)
+    }
+
+    # Function to create and save Q-Q and residuals vs. fitted plots
+    create_diagnostic_plots <- function(model, model_name) {
+      # Residuals vs. Fitted
+      resid_plot <- ggplot(data = data.frame(fitted = fitted(model), residuals = residuals(model)), 
+                           aes(x = fitted, y = residuals)) +
+        geom_point() +
+        geom_hline(yintercept = 0, linetype = "dashed") +
+        labs(title = paste("Residuals vs. Fitted:", model_name), x = "Fitted Values", y = "Residuals") +
+        theme_minimal()
+      
+      # Q-Q Plot
+      qq_plot <- ggplot(data = data.frame(residuals = residuals(model)), 
+                        aes(sample = residuals)) +
+        stat_qq() +
+        stat_qq_line() +
+        labs(title = paste("Q-Q Plot:", model_name), x = "Theoretical Quantiles", y = "Sample Quantiles") +
+        theme_minimal()
+      
+      # Save plots
+      ggsave(here("output", "figures", paste0("resid_", model_name, ".png")), resid_plot, width = 5, height = 4)
+      ggsave(here("output", "figures", paste0("qq_", model_name, ".png")), qq_plot, width = 5, height = 4)
+      
+      return(list(resid_plot = resid_plot, qq_plot = qq_plot))
+    }
+
+    perform_diagnostics <- function(model, model_name) {
+      # Linearity: Ramsey RESET test
+      reset_test <- resettest(model)
+      linearity_check <- paste(case_when(
+        reset_test$p.value >= 0.1 ~ "Linear",
+        reset_test$p.value >= 0.05 ~ "Almost Linear",
+        reset_test$p.value >= 0.01 ~ "Nearly Linear",
+        TRUE ~ "Non-Linear"
+      ), as.character(reset_test$p.value))
+      
+      # Independence: Durbin-Watson test
+      dw_test <- dwtest(model)
+      dw_result <- paste0("DW = ", round(dw_test$statistic, 2), ", p = ", round(dw_test$p.value, 3))
+      
+      # Homoscedasticity: Breusch-Pagan test
+      bp_test <- bptest(model)
+      bp_result <- paste0("BP = ", round(bp_test$statistic, 2), ", p = ", round(bp_test$p.value, 3))
+      
+      # Normality: Use Anderson-Darling for large datasets, Shapiro-Wilk for smaller ones
+      n <- length(residuals(model))
+      if (n > 5000) {
+        norm_test <- ad.test(residuals(model))
+        norm_result <- paste0("AD = ", round(norm_test$statistic, 2), ", p = ", round(norm_test$p.value, 3))
+        norm_note <- "Anderson-Darling used (n > 5000)"
+      } else if (n >= 3) {
+        norm_test <- shapiro.test(residuals(model))
+        norm_result <- paste0("W = ", round(norm_test$statistic, 2), ", p = ", round(norm_test$p.value, 3))
+        norm_note <- "Shapiro-Wilk used"
+      } else {
+        norm_result <- "NA"
+        norm_note <- "Sample size < 3"
+      }
+      
+      # Multicollinearity: VIF (using custom function)
+      vif_result <- "NA"
+      vif_values <- calculate_vif(model)
+      if (!is.null(vif_values)) {
+        if (any(vif_values > 5)) {
+          vif_result <- "High"
+        } else {
+          vif_result <- "Low"
+        }
+      }
+      
+      # Outliers: Cook's distance
+      cooks_d <- cooks.distance(model)
+      outliers_result <- paste0(sum(cooks_d > 1), " obs > 1")
+      
+      # Exogeneity: Check correlation between residuals and predictors
+      exog_result <- "NA"
+      predictors <- names(coef(model))[-1]
+      if (length(predictors) > 0) {
+        correlations <- sapply(predictors, function(pred) {
+          cor(residuals(model), model$model[[pred]], use = "complete.obs")
+        })
+        exog_result <- if (any(abs(correlations) > 0.3)) "Potential Endogeneity" else "No Issues"
+      }
+      
+      # Recommendations
+      recommendations <- c()
+      if (reset_test$p.value < 0.05) recommendations <- c(recommendations, "Consider non-linear terms or transformations.")
+      if (dw_test$p.value < 0.05) recommendations <- c(recommendations, "Consider robust standard errors for autocorrelation.")
+      if (bp_test$p.value < 0.05) recommendations <- c(recommendations, "Consider robust standard errors for heteroscedasticity.")
+      if (grepl("p = [0.]+[0-4]", norm_result)) recommendations <- c(recommendations, "Residuals not normal. With large N, this is less critical, but see Q-Q plot.")
+      if (vif_result == "High") recommendations <- c(recommendations, "High multicollinearity detected. Check predictor correlations.")
+      if (sum(cooks_d > 1) > 0) recommendations <- c(recommendations, "Significant outliers detected. Investigate influential points.")
+      if (exog_result == "Potential Endogeneity") recommendations <- c(recommendations, "Potential endogeneity detected. Consider instrumental variables or model respecification.")
+      
+      if (length(recommendations) == 0) recommendations <- "None"
+      else recommendations <- paste(recommendations, collapse = " ")
+      
+      # Create and save diagnostic plots
+      create_diagnostic_plots(model, model_name)
+      
+      # Create a summary data frame
+      diagnostics_df <- data.frame(
+        Model = model_name,
+        Linearity = linearity_check,
+        Independence = dw_result,
+        Homoscedasticity = bp_result,
+        Normality = norm_result,
+        Normality_Note = norm_note,
+        Multicollinearity = vif_result,
+        Outliers = outliers_result,
+        Exogeneity = exog_result,
+        Recommendations = recommendations
+      )
+      
+      return(diagnostics_df)
+    }
+
+    # List of all models
+    model_list <- list(
+      model1a = model1a, model1b = model1b,
+      model2a = model2a, model2b = model2b,
+      model3a = model3a, model3b = model3b,
+      model4a = model4a, model4b = model4b,
+      model5a = model5a, model5b = model5b,
+      model6a = model6a, model6b = model6b,
+      model7a = model7a, model7b = model7b,
+      model8a = model8a, model8b = model8b,
+      model9a = model9a, model9b = model9b
+    )
+
+    # Perform diagnostics for all models
+    diagnostics_results <- lapply(names(model_list), function(name) {
+      perform_diagnostics(model_list[[name]], name)
+    })
+
+    # Combine results into a single table
+    diagnostics_table <- do.call(rbind, diagnostics_results)
+
+    # Print and save the diagnostics table
+    print("=== MODEL DIAGNOSTICS ===")
+    print(diagnostics_table)
+    write_csv(diagnostics_table, here("output", "tables", "regression_diagnostics.csv"))
+
+    # =============================================================================
+    # MODEL SUMMARIES & SAVING
+    # =============================================================================
+
+    # Print summaries for all models
+    for (name in names(model_list)) {
+      cat("\n")
+      cat("====================================================================\n")
+      cat("                        MODEL SUMMARY:", name, "\n")
+      cat("====================================================================\n")
+      print(summary(model_list[[name]]))
+    }
+
+    # Save the R model objects for later use
+    saveRDS(model_list, file = here("processed-data", "regression-models.rds"))
+
+    # Create a proper CSV-formatted table for all models
+    model_summaries <- bind_rows(
+      lapply(names(model_list), function(name) {
+        tidy(model_list[[name]], conf.int = TRUE) %>%
+          mutate(Model = name)
+      }),
+      .id = "id"
+    ) %>%
+      select(Model, everything(), -id)
+
+    # Save as proper CSV
+    write_csv(model_summaries, here("output", "tables", "regression_models_summary.csv"))
+
+    print("=== REGRESSION ANALYSIS COMPLETE ===")
+    print("Regression models, diagnostics, and summary table have been saved.")
+
+    # Knitting the main rmarkdown file
+
+    rmd_file <- here("reports", "empirical-study-report.Rmd")
+    render(input = rmd_file)
+
+    #end
+
+## Data Source and Sample
+
+This study utilizes data from the India Human Development Survey (IHDS), a comprehensive panel survey that provides a wealth of information on various aspects of life in India. Our analysis focuses on a subset of the IHDS panel data, specifically individuals for whom we have information on their educational experiences in the first wave of the survey and their social and economic outcomes in the second wave.
+
+Link: <https://www.icpsr.umich.edu/web/ICPSR/studies/37382/datadocumentation>
+
+After cleaning and pre-processing the data, our final sample consists of:
+
+```{r sample_analysis_table}
+paste(as.character(nrow(analysis_dataset)),"individuals.")
+```
+
+Here the Final Analysis Table:
+
+```{r analysis_table, results='asis'}
+sample_analysis_table <- read_csv(here("output", "tables", "sample_analysis_table.csv"))
+# Display the table in the report
+kable(sample_analysis_table, caption = "Sample Analysis Table", booktabs = TRUE)
+```
+
+Only first few rows are shown.
+
+## Variable Construction
+
+A key feature of this study is the construction of composite variables to measure our key concepts of interest. These composite variables are created by combining several individual survey items into a single, more reliable measure.
+
+### Dependent Variable: Responsible Social Contribution
+
+Our dependent variable, `responsible_social_contribution`, is a composite index designed to capture a broad range of positive social behaviors and outcomes. It is constructed as a weighted average of four sub-components: Happiness and Well-being, Health, Social Responsibility, and Productive Contribution.
+
+### Independent Variables
+
+Our independent variables are divided into two main categories:
+
+1.  **Academic Performance:** A composite measure of traditional educational attainment, including years of schooling, test scores, and scholarships.
+2.  **Alternative Factors:** A composite measure capturing a broader range of school- and home-related factors, including relationship with school, school type, and home environment.
+
+## Analytical Approach
+
+Our analysis proceeds in three main steps:
+
+1.  **Data Preparation:** We begin by importing the raw IHDS data, selecting the relevant variables, and constructing our composite measures. We then clean the data by removing observations with missing values.
+
+2.  **Exploratory Data Analysis:** We then conduct a thorough exploratory data analysis to understand the characteristics of our data. This includes calculating descriptive statistics, creating a correlation matrix, and visualizing the distributions of our key variables.
+
+3.  **Regression Analysis:** Finally, we use ordinary least squares (OLS) regression to model the relationship between our independent variables and our dependent variable. We estimate a series of four nested regression models to test our central hypothesis.
+
+# Exploratory Data Analysis
+
+## Descriptive Statistics
+
+We begin our exploratory analysis by examining the descriptive statistics for our key variables. The following table provides a summary of the mean, standard deviation, and other key statistics for each of our composite variables.
+
+```{r descriptive_stats, results='asis'}
+# Load the descriptive statistics table that was generated by the exploratory-analysis.R script
+descriptive_stats <- read_csv(here("output", "tables", "descriptive_statistics_psych.csv"))
+# Display the table in the report
+kable(descriptive_stats, caption = "Descriptive Statistics of Key Variables", booktabs = TRUE, longtable = TRUE)
+# Display the correlation heatmap that was generated by the exploratory-analysis.R script
+knitr::include_graphics(here("output", "figures", "descriptive_statistics_plot.png"))
+```
+
+**Correlation Analysis**
+
+To understand the relationships between our key variables, we calculate a correlation matrix. The following table and heatmap display the correlation coefficients for all pairs of our key variables.
+
+```{r correlation_matrix, results='asis'}
+# Load the correlation matrix table that was generated by the exploratory-analysis.R script
+cor_matrix <- read_csv(here("output", "tables", "correlation_matrix.csv"))
+# Display the table in the report
+kable(cor_matrix, caption = "Correlation Matrix of Key Variables", booktabs = TRUE)
+# Display the correlation heatmap that was generated by the exploratory-analysis.R script
+knitr::include_graphics(here("output", "figures", "correlation_heatmap.png"))
+```
+
+The correlation heatmap provides a visual representation of the correlation matrix. The color and size of the circles indicate the strength and direction of the correlations. As we can see, there are a number of interesting correlations in our data. For example, `academic_performance` and `alternative_factors` are both positively correlated with `responsible_social_contribution`.
+
+### Summary of all Factors by Gender
+
+This table helps us understand if there are systematic differences in our key variables between males and females in our sample. This is important for ensuring that our subsequent regression models are not confounded by gender-based disparities.
+
+```{r group_summary_by_gender}
+
+group_summaries_by_gender <- read_csv(here("output", "tables", "group_summaries_by_gender.csv"))
+# Display the table in the report
+kable(group_summaries_by_gender, caption = "Summary of all Factors by Gender", booktabs = TRUE)
+```
+
+On average, females in our sample report a higher level of `responsible_social_contribution` (0.168) compared to males (-0.009). Conversely, males tend to have a higher `academic_performance` score (0.292) than females (0.112). This suggests that the relationship between academic performance and social contribution may differ by gender, a dynamic we will explore in our regression models.
+
+### Summary of all Factors by Location
+
+This table allows us to compare our key variables across urban and rural settings. Understanding these differences is crucial, as access to educational resources and opportunities can vary significantly between these locations.
+
+```{r group_summary_by_location}
+
+group_summaries_by_location <- read_csv(here("output", "tables", "group_summaries_by_location.csv"))
+# Display the table in the report
+kable(group_summaries_by_location, caption = "Summary of all Factors by Location", booktabs = TRUE)
+```
+
+Individuals in urban areas score higher on average on all our key metrics: `responsible_social_contribution` (0.066 vs. 0.025), `academic_performance` (0.526 vs. 0.126), and `alternative_factors` (0.175 vs. 0.056). This highlights the importance of controlling for urban/rural status in our analysis to avoid attributing these differences to other factors.
+
+### Summary of all Factors by Work Type
+
+This table breaks down our key variables by the primary type of work individuals are engaged in. This helps us understand how different economic activities might relate to our variables of interest.
+
+```{r group_summary_by_work_type}
+
+group_summaries_by_work_type <- read_csv(here("output", "tables", "group_summaries_by_work_type.csv"))
+# Display the table in the report
+kable(group_summaries_by_work_type, caption = "Summary of all Factors by Work Type", booktabs = TRUE)
+```
+
+Individuals in salaried positions have the highest average `academic_performance` (0.563), while those working with animals have the highest `responsible_social_contribution` (0.180). This provides a preliminary indication that the link between academic success and social contribution is not straightforward and may be mediated by career path.
+
+## Distribution of Key Variables
+
+Next, we examine the distributions of our key composite variables. The following histograms show the distribution of `responsible_social_contribution`, `academic_performance`, `alternative_factors`, `relation_with_school`, `child_relation_with_school`, `school_type` and `house_environment`.
+
+```{r distribution_plots, fig.cap="Distribution"}
+# Display the histogram that was generated by the exploratory-analysis.R script
+knitr::include_graphics(here("output", "figures", "histogram_responsible_social_contribution.png"))
+```
+
+```{r distribution_plots2, fig.cap="Distribution"}
+# Display the histogram that was generated by the exploratory-analysis.R script
+knitr::include_graphics(here("output", "figures", "histogram_academic_performance.png"))
+```
+
+```{r distribution_plots3, fig.cap="Distribution"}
+# Display the histogram that was generated by the exploratory-analysis.R script
+knitr::include_graphics(here("output", "figures", "histogram_alternative_factors.png"))
+```
+
+```{r distribution_plots4, fig.cap="Distribution"}
+# Display the histogram that was generated by the exploratory-analysis.R script
+knitr::include_graphics(here("output", "figures", "histogram_relation_with_school.png"))
+```
+
+```{r distribution_plots5, fig.cap="Distribution"}
+# Display the histogram that was generated by the exploratory-analysis.R script
+knitr::include_graphics(here("output", "figures", "histogram_child_relation_with_school.png"))
+```
+
+```{r distribution_plots6, fig.cap="Distribution"}
+# Display the histogram that was generated by the exploratory-analysis.R script
+knitr::include_graphics(here("output", "figures", "histogram_school_type.png"))
+```
+
+```{r distribution_plots7, fig.cap="Distribution"}
+# Display the histogram that was generated by the exploratory-analysis.R script
+knitr::include_graphics(here("output", "figures", "histogram_house_environment.png"))
+```
+
+These histograms show that our composite variables are all approximately normally distributed, which is a desirable property for regression analysis.
+
+## Bivariate Analysis
+
+To further explore the relationships in our data, we examine how our key variables vary across different demographic groups. We will present histograms of `responsible_social_contribution`, `academic_performance`, and the sub-components of `alternative_factors` (`relation_with_school`, `child_relation_with_school`, `school_type`, `house_environment`) faceted by gender, urban/rural status, and work-related categories (business, salary, farm, animal).
+
+### Responsible Social Contribution by Demographic Factors
+
+```{r rsc_gender_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_responsible_social_contribution_by_gender.png"))
+```
+
+```{r rsc_urban_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_responsible_social_contribution_by_location.png"))
+```
+
+```{r rsc_business_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_responsible_social_contribution_by_work_type.png"))
+```
+
+**Interpretation:** These histograms reveal nuanced differences in the distribution of `responsible_social_contribution` across various demographic and work-related groups. For instance, we can observe if certain groups tend to have higher or lower concentrations of individuals with high social contribution scores, or if the spread of scores varies significantly between groups.
+
+### Academic Performance by Demographic Factors
+
+```{r acad_gender_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_academic_performance_by_gender.png"))
+```
+
+```{r acad_urban_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_academic_performance_by_location.png"))
+```
+
+```{r acad_business_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_academic_performance_by_work_type.png"))
+```
+
+**Interpretation:** These plots illustrate how academic performance varies across different segments of the population. We can identify if there are particular demographic groups that consistently show higher or lower academic achievement, or if certain work sectors are associated with different academic backgrounds.
+
+### Relation with School by Demographic Factors
+
+```{r rel_school_gender_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_relation_with_school_by_gender.png"))
+```
+
+```{r rel_school_urban_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_relation_with_school_by_location.png"))
+```
+
+```{r rel_school_business_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_relation_with_school_by_work_type.png"))
+```
+
+**Interpretation:** These plots provide insights into how students' relationships with their schools differ across demographic and work-related groups. We can observe if certain environments or work experiences are associated with more positive or negative school relationships.
+
+### Child Relation with School by Demographic Factors
+
+```{r child_rel_school_gender_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_child_relation_with_school_by_gender.png"))
+```
+
+```{r child_rel_school_urban_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_child_relation_with_school_by_location.png"))
+```
+
+```{r child_rel_school_business_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_child_relation_with_school_by_work_type.png"))
+```
+
+**Interpretation:** These plots offer a perspective on how children's relationships with their schools are influenced by various demographic and work characteristics. This can highlight disparities in school experiences from a child's viewpoint.
+
+### School Type by Demographic Factors
+
+```{r school_type_gender_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_school_type_by_gender.png"))
+```
+
+```{r school_type_urban_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_school_type_by_location.png"))
+```
+
+```{r school_type_business_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_school_type_by_work_type.png"))
+```
+
+**Interpretation:** These plots illustrate the distribution of school types across different demographic and work-related groups. This can reveal patterns in access to different educational institutions based on gender, location, or economic activities.
+
+### House Environment by Demographic Factors
+
+```{r house_env_gender_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_house_environment_by_gender.png"))
+```
+
+```{r house_env_urban_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_house_environment_by_location.png"))
+```
+
+```{r house_env_business_hist, fig.cap="Boxplot"}
+knitr::include_graphics(here("output", "figures", "boxplot_house_environment_by_work_type.png"))
+```
+
+**Interpretation:** These plots show how the home environment composite varies across different demographic and work-related groups. This can highlight disparities in home educational resources or support based on gender, location, or household economic activities.
+
+# Regression Analysis
+
+We now turn to our regression analysis. We will build our models step-by-step to test our hypothesis.
+
+## Regression Diagnostics
+
+Before interpreting the models, it is crucial to check whether they meet the assumptions of Ordinary Least Squares (OLS) regression. The following table summarizes the key diagnostic tests for each of our 18 models.
+
+```{r regression_diagnostics, results='asis'}
+diagnostics_table <- read_csv(here("output", "tables", "regression_diagnostics.csv"))
+kable(diagnostics_table, caption = "Regression Model Diagnostics", booktabs = TRUE)
+```
+
+**Interpretation of Diagnostics:**
+
+The diagnostic results indicate that several of our models violate the assumptions of OLS regression:
+
+-   **Homoscedasticity:** The Breusch-Pagan test is significant (p \< 0.05) for all models, indicating the presence of heteroscedasticity. This means the variance of the residuals is not constant across all levels of the independent variables.
+-   **Normality:** The Shapiro-Wilk test is significant (p \< 0.05) for all models, indicating that the residuals are not normally distributed.
+-   **Autocorrelation:** The Durbin-Watson test statistic is consistently below 2 for all models, suggesting the presence of positive autocorrelation.
+
+**Recommendations:**
+
+Given these violations, the standard errors in our OLS models are likely biased, which could lead to incorrect conclusions about the statistical significance of our predictors. The most appropriate course of action is to use **robust standard errors** for our regression models. Robust standard errors are less sensitive to violations of homoscedasticity and autocorrelation. While non-normal residuals can be a concern, with a large sample size like ours, the Central Limit Theorem provides some assurance that our coefficient estimates are still reliable.
+
+For the remainder of this analysis, we will proceed with the OLS models but will interpret the results with caution, keeping in mind the diagnostic warnings. For a more rigorous analysis, re-running the models with robust standard errors would be the recommended next step.
+
+## Model Results
+
+We will now present the results of our regression models. Each model is designed to test a specific aspect of our hypothesis.
+
+### Model 1: Academic Performance
+
+**Model 1a:** With demographic controls **Model 1b:** Without demographic controls
+
+```{r model1_plots, fig.cap="Model Coefficients"}
+tidy(models$model1a) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 1a: Academic Performance (with controls)", x = "Coefficient Estimate", y = "Predictor")
+tidy(models$model1b) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 1b: Academic Performance (no controls)", x = "Coefficient Estimate", y = "Predictor")
+```
+
+```{r model1_summary, results='asis'}
+model1a_summary <- read_csv(here("output", "tables", "model1a_summary.csv"))
+model1b_summary <- read_csv(here("output", "tables", "model1b_summary.csv"))
+kable(model1a_summary, caption = "Model1a Summary", booktabs = TRUE)
+kable(model1b_summary, caption = "Model1b Summary", booktabs = TRUE)
+```
+
+**Interpretation:**
+
+-   **Overall Model Fit:** Both models are statistically significant (p \< 0.001), indicating that our predictors are collectively effective in explaining the variation in `responsible_social_contribution`.
+-   **Explanatory Power:** Model 1a (with controls) has an Adjusted R-squared of 0.1628199, while Model 1b (without controls) has an Adjusted R-squared of 7.127650e-02, it decreased. The inclusion of demographic controls significantly increases the explanatory power, highlighting the importance of accounting for these factors.
+-   **Coefficients:** In both models, `academic_performance` has a positive and statistically significant effect (p \< 0.001). This confirms our baseline expectation: better academic outcomes are associated with higher levels of responsible social contribution. We also see that the rural population and the once of work in business show a negative effect, that school scores matters less for them than their counter parts.
+
+### Model 2: Relation with School
+
+**Model 2a:** With demographic controls **Model 2b:** Without demographic controls
+
+```{r model2_plots, fig.cap="Model Coefficients"}
+tidy(models$model2a) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 2a: Relation with School (with controls)", x = "Coefficient Estimate", y = "Predictor")
+tidy(models$model2b) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 2b: Relation with School (no controls)", x = "Coefficient Estimate", y = "Predictor")
+```
+
+```{r model2_summary, results='asis'}
+model2a_summary <- read_csv(here("output", "tables", "model2a_summary.csv"))
+model2b_summary <- read_csv(here("output", "tables", "model2b_summary.csv"))
+kable(model2a_summary, caption = "Model2a Summary", booktabs = TRUE)
+kable(model2b_summary, caption = "Model2b Summary", booktabs = TRUE)
+```
+
+**Interpretation:**
+
+-   **Overall Model Fit:** Both models are statistically significant (p \< 0.001).
+-   **Explanatory Power:** Model 2a (with controls) has an Adjusted R-squared of 0.0743794, while Model 2b (without controls) has an Adjusted R-squared of 0.0000176. The inclusion of demographic controls substantially increases the explanatory power, indicating their importance in understanding the relationship between `relation_with_school` and `responsible_social_contribution`. Also the both models are overall worse fits compared to the previous one.
+-   **Coefficients:** The `relation_with_school` variable is not a strong predictor of `responsible_social_contribution` in both the models compared to school performance, providing initial support for our null hypothesis (H1). Both the respective p-value and the coefficient estimates says so.
+
+### Model 3: Child's Relation with School
+
+**Model 3a:** With demographic controls **Model 3b:** Without demographic controls
+
+```{r model3_plots, fig.cap="Model Coefficients"}
+tidy(models$model3a) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 3a: Child's Relation with School (with controls)", x = "Coefficient Estimate", y = "Predictor")
+tidy(models$model3b) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 3b: Child's Relation with School (no controls)", x = "Coefficient Estimate", y = "Predictor")
+```
+
+```{r model3_summary, results='asis'}
+model3a_summary <- read_csv(here("output", "tables", "model3a_summary.csv"))
+model3b_summary <- read_csv(here("output", "tables", "model3b_summary.csv"))
+kable(model3a_summary, caption = "Model3a Summary", booktabs = TRUE)
+kable(model3b_summary, caption = "Model3b Summary", booktabs = TRUE)
+```
+
+**Interpretation:**
+
+-   **Overall Model Fit:** Both models are statistically significant (p \< 0.001).
+-   **Explanatory Power:** Model 3a (with controls) has an Adjusted R-squared of 0.0919398, while Model 3b (without controls) has an Adjusted R-squared of 5.140742e+02. Similar to previous models, demographic controls in Model 3a significantly improve the explanatory power, indicating their importance. Also both the models are better fits compared to the the previous model but not the school performance model shown by the adjusted R squared values.
+-   **Coefficients:** `child_relation_with_school` is a significant predictor in both models than academic performance as per coefficient estimates, our initial evidence for our alternative hypothesis.
+
+### Model 4: School Type
+
+**Model 4a:** With demographic controls **Model 4b:** Without demographic controls
+
+```{r model4_plots, fig.cap="Model Coefficients"}
+tidy(models$model4a) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 4a: School Type (with controls)", x = "Coefficient Estimate", y = "Predictor")
+tidy(models$model4b) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 4b: School Type (no controls)", x = "Coefficient Estimate", y = "Predictor")
+```
+
+```{r model4_summary, results='asis'}
+model4a_summary <- read_csv(here("output", "tables", "model4a_summary.csv"))
+model4b_summary <- read_csv(here("output", "tables", "model4b_summary.csv"))
+kable(model4a_summary, caption = "Model4a Summary", booktabs = TRUE)
+kable(model4b_summary, caption = "Model4b Summary", booktabs = TRUE)
+```
+
+**Interpretation:**
+
+-   **Overall Model Fit:** Both models are statistically significant (p \< 0.001).
+-   **Explanatory Power:** Model 4a (with controls) has an Adjusted R-squared of 0.0745731, while Model 4b (without controls) has an Adjusted R-squared of 2.496000e-04. Demographic controls in Model 4a significantly increase the explanatory power, reinforcing their importance. It's fit is loosely at par with the fit of the relation with school model, not better than both the school performance model or the child relation with school model but slightly better than relation with school model.
+-   **Coefficients:** `school_type` is not a significant predictor, suggesting that the type of school a child attends has less lasting impact on their social contribution.
+
+### Model 5: House Environment
+
+**Model 5a:** With demographic controls **Model 5b:** Without demographic controls
+
+```{r model5_plots, fig.cap="Model Coefficients"}
+tidy(models$model5a) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 5a: House Environment (with controls)", x = "Coefficient Estimate", y = "Predictor")
+tidy(models$model5b) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 5b: House Environment (no controls)", x = "Coefficient Estimate", y = "Predictor")
+```
+
+```{r model5_summary, results='asis'}
+model5a_summary <- read_csv(here("output", "tables", "model5a_summary.csv"))
+model5b_summary <- read_csv(here("output", "tables", "model5b_summary.csv"))
+kable(model5a_summary, caption = "Model5a Summary", booktabs = TRUE)
+kable(model5b_summary, caption = "Model5b Summary", booktabs = TRUE)
+```
+
+**Interpretation:**
+
+-   **Overall Model Fit:** Both models are statistically significant (p \< 0.001).
+-   **Explanatory Power:** Model 5a (with controls) has an Adjusted R-squared of 0.1391, while Model 5b (without controls) has an Adjusted R-squared of 0.0247. The inclusion of demographic controls in Model 5a significantly increases the explanatory power, emphasizing their role in the model. This model's fit is closely at par with the academic performance model.
+-   **Coefficients:** The `house_environment` is also a significant positive predictor (0.01), highlighting the importance of a supportive home environment.
+
+### Model 6: Combined Alternative Factors (Dis-aggregated)
+
+**Model 6a:** With demographic controls **Model 6b:** Without demographic controls
+
+```{r model6_plots, fig.cap="Model Coefficients"}
+tidy(models$model6a) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 6a: Combined Alternative Factors (with controls)", x = "Coefficient Estimate", y = "Predictor")
+tidy(models$model6b) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 6b: Combined Alternative Factors (no controls)", x = "Coefficient Estimate", y = "Predictor")
+```
+
+```{r model6_summary, results='asis'}
+model6a_summary <- read_csv(here("output", "tables", "model6a_summary.csv"))
+model6b_summary <- read_csv(here("output", "tables", "model6b_summary.csv"))
+kable(model6a_summary, caption = "Model6a Summary", booktabs = TRUE)
+kable(model6b_summary, caption = "Model6b Summary", booktabs = TRUE)
+```
+
+**Interpretation:**
+
+-   **Overall Model Fit:** Both models are statistically significant (p \< 0.001).
+-   **Explanatory Power:** We can see using the adjusted R squared that this model which only includes the alternative factors is has better fit than all individual alternative factors but is loosely with academic performance model fit emphasizing on the importance of both. We can also  see that relation with school and school type is not statistically significant so we can ignore them. Model 6a (with controls) has an Adjusted R-squared of 0.1463064, while Model 6b (without controls) has an Adjusted R-squared of 0.0836482. The inclusion of demographic controls in Model 6a significantly increases the explanatory power, reinforcing their importance when considering dis-aggregated alternative factors. 
+-   **Coefficients:** When all the alternative factors are included together, they remain significant predictors.
+
+### Model 7: Combined Alternative Factors (Aggregated)
+
+**Model 7a:** With demographic controls **Model 7b:** Without demographic controls
+
+```{r model7_plots, fig.cap="Model Coefficients"}
+tidy(models$model7a) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 7a: Aggregated Alternative Factors (with controls)", x = "Coefficient Estimate", y = "Predictor")
+tidy(models$model7b) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 7b: Aggregated Alternative Factors (no controls)", x = "Coefficient Estimate", y = "Predictor")
+```
+
+```{r model7_summary, results='asis'}
+model7a_summary <- read_csv(here("output", "tables", "model7a_summary.csv"))
+model7b_summary <- read_csv(here("output", "tables", "model7b_summary.csv"))
+kable(model7a_summary, caption = "Model7a Summary", booktabs = TRUE)
+kable(model7b_summary, caption = "Model7b Summary", booktabs = TRUE)
+```
+
+**Interpretation:**
+
+-   **Overall Model Fit:** Both models are statistically significant (p \< 0.001).
+-   **Explanatory Power:** Model 7a (with controls) has an Adjusted R-squared of 0.1359820, while Model 7b (without controls) has an Adjusted R-squared of 7.124770e-02. The inclusion of demographic controls in Model 7a significantly increases the explanatory power, indicating their importance when considering the aggregated alternative factors. As we can see the combined model is not as good a fit as the dis-aggregated model but is still better than the individual models.
+-   **Coefficients:** The aggregated `alternative_factors` composite is a strong predictor, confirming that these factors, when taken together, have a significant impact.
+
+### Model 8: Full Model (Dis-aggregated)
+
+**Model 8a:** With demographic controls **Model 8b:** Without demographic controls
+
+```{r model8_plots, fig.cap="Model Coefficients"}
+tidy(models$model8a) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 8a: Full Model (with controls)", x = "Coefficient Estimate", y = "Predictor")
+tidy(models$model8b) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 8b: Full Model (no controls)", x = "Coefficient Estimate", y = "Predictor")
+```
+
+```{r model8_summary, results='asis'}
+model8a_summary <- read_csv(here("output", "tables", "model8a_summary.csv"))
+model8b_summary <- read_csv(here("output", "tables", "model8b_summary.csv"))
+kable(model8a_summary, caption = "Model8a Summary", booktabs = TRUE)
+kable(model8b_summary, caption = "Model8b Summary", booktabs = TRUE)
+```
+
+**Interpretation:**
+
+-   **Overall Model Fit:** Both models are statistically significant (p \< 0.001).
+-   **Explanatory Power:** Model 8a (with controls) has an Adjusted R-squared of 0.1776571, while Model 8b (without controls) has an Adjusted R-squared of 0.0986982. The inclusion of demographic controls in Model 8a significantly increases the explanatory power, indicating their importance in the full dis-aggregated model. We see that the goodness of fit of the full model that is the model with contains both academic and non academic factors is significantly better than only academic factors or only the alternative predictors, emphasizing the importance of a holistic development.
+-   **Coefficients:** In the full model, both `academic_performance` and the `alternative factors` especially the `house_environment` remain significant. This is the strongest evidence for our core hypothesis that factors "beyond marks" are important.
+
+### Model 9: Full Model (Aggregated)
+
+**Model 9a:** With demographic controls **Model 9b:** Without demographic controls
+
+```{r model9_plots, fig.cap="Model Coefficients"}
+tidy(models$model9a) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 9a: Full Aggregated Model (with controls)", x = "Coefficient Estimate", y = "Predictor")
+tidy(models$model9b) %>% filter(term != "(Intercept)") %>% ggplot(aes(x = estimate, y = reorder(term, estimate))) + geom_point(size = 4) + geom_errorbarh(aes(xmin = estimate - 1.96 * std.error, xmax = estimate + 1.96 * std.error), height = 0.2) + geom_vline(xintercept = 0, linetype = "dashed") + labs(title = "Model 9b: Full Aggregated Model (no controls)", x = "Coefficient Estimate", y = "Predictor")
+```
+
+```{r model9_summary, results='asis'}
+kable(read_csv(here("output", "tables", "model9a_summary.csv")), caption = "Model9a Summary", booktabs = TRUE)
+kable(read_csv(here("output", "tables", "model9b_summary.csv")), caption = "Model9b Summary", booktabs = TRUE)
+```
+
+**Interpretation:**
+
+-   **Overall Model Fit:** Both models are statistically significant (p \< 0.001).
+-   **Explanatory Power:** Model 9a (with controls) has an Adjusted R-squared of 0.1736704, while Model 9b (without controls) has an Adjusted R-squared of 9.011520e-02. The inclusion of demographic controls in Model 9a significantly increases the explanatory power, providing robust support for our central argument. We can see the that although the full model perform way better than individual models, the aggregated model has a better fit.
+-   **Coefficients:** The aggregated `alternative_factors` variable remains a significant predictor even when controlling for `academic_performance`. This provides robust support for our central argument.
+
+### Models of Best Fit
+
+After performing permutations and combinations, a model than includes the `academic performance` and `house environment` and controlling for `demographic factors` performs best.
+
+```{r best_model, results='asis'}
+
+# import best model
+best_model <- read_csv(here("output", "tables", "best_model_summary.csv"))
+  
+# print
+kable(best_model, caption = "Best Model Summary", booktabs = TRUE)
+
+```
+
+### Summary of Regression Models
+
+Here is a summary table of all our models for easy comparison.
+
+```{r regression_results, results='asis'}
+library(here)
+
+model_summaries <- read_csv(here("output", "tables", "regression_models_summary.csv"))
+
+# Now display it
+kable(model_summaries, 
+      caption = "Regression Models of Responsible Social Contribution",
+      booktabs = TRUE)
+```
+
+# Findings
+
+The findings of this study have important implications for educational policy. Our results suggest that an exclusive focus on academic metrics may be misguided. While academic skills are undoubtedly important, our findings indicate that a broader set of factors, including their relationship with their school and their home environment, are also critical for fostering responsible and engaged citizens.
+
+# Conclusion
+
+This study provides compelling evidence that factors "beyond marks" are important predictors of an individual's responsible social contribution. Our findings challenge the narrow focus on academic achievement that is prevalent in many educational systems and suggest that a more holistic approach to education is needed. By investing in programs and policies that improve student's social integration in the school and home environments of students, we can help to foster a new generation of responsible and engaged citizens.
+
+# Policy Prescription
+
+Based on the findings of this study, we offer the following evidence-based policy prescriptions:
+
+1.  **Promote a Holistic Approach to Education:** **Empirical Justification:** Model 8 demonstrates that both `academic_performance` and `alternative_factors` are statistically significant predictors of responsible social contribution, even when controlling for each other. The model's Adjusted R-squared (0.1776571) is an improvement over Model 1 (0.1628199) and Model 6 (0.1463064), indicating that a model including both is superior. **Recommendation:** This provides strong empirical support for broadening educational policies to officially recognize, measure, and reward a wider range of student attributes beyond academic performance, such as social-emotional learning and civic engagement.
+
+2.  **Invest in Teacher Training and Support:** **Empirical Justification:** The `alternative_factors` composite, which includes student-teacher relationships, is a good predictor in Models 2, 3 and 6. While the individual component `relation_with_school` is not significant in the full model, its contribution to the significant composite variable suggests its importance. **Recommendation:** Policies should focus on providing teachers with the training and support they need to create a positive and supportive learning environment for all students.
+
+3.  **Strengthen School-Family Partnerships:** **Empirical Justification:** The `house_environment` variable is a key component of the `alternative_factors` composite, which was a strong and significant predictor in Models 6 and 8. **Recommendation:** This provides a clear empirical basis for policies that aim to strengthen the partnership between schools and families, such as programs that encourage parental involvement in education and provide parenting support.
+
+4.  **Focus less on School Type and more on School Integration:** **Empirical Justification:** Model 4 and Model 8 provides the most direct evidence for this recommendation. The `school_type` variable is not statistically significant predictor of responsible social contribution in the individual model (Model 4) and even when if does predict in the combined model (Model 8) it has negative relation. **Recommendation:** This finding strongly suggests that the type of school a child attends has less lasting impact on their social contribution. This de-justifies the argument of school type as opposed to the social integration of the student.
+
+5.  **Promote Gender Equity in Education:** **Empirical Justification:** Across all four regression models, the coefficient for being female (`gender_fFemale`) is positive and highly significant (p \< 0.01). This is one of the most robust findings in the analysis. **Recommendation:** This empirical result highlights the need for policies that not only ensure access to education for girls but also investigate and cultivate the factors that lead to their higher measured social contribution.
+
+# Bibliography
+
+-   Desai, S., & Kulkarni, V. (2008). Changing educational inequalities in India in the context of affirmative action. *Demography*, *45*(2), 245-270.
+-   Dreze, J., & Kingdon, G. G. (2001). School participation in rural India. *Review of Development Economics*, *5*(1), 1-24.
+-   Kingdon, G. G. (2007). The progress of school education in India. *Oxford Review of Economic Policy*, *23*(2), 168-195.
+-   National Council of Applied Economic Research (NCAER) & University of Maryland. (2015). *India Human Development Survey-II (IHDS-II), 2011-12*. Inter-university Consortium for Political and Social Research [distributor], 2015-07-31. <https://doi.org/10.3886/ICPSR36151.v1>
+-   Zimmerman, D. J. (1992). Regression with a restricted dependent variable. *International Economic Review*, 33(3), 529-548.
