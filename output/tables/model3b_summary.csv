@@ -1,7 +1,0 @@
-"Variable","Coefficient","Std_Error","t_value","p_value","Significance"
-"(Intercept)",0.0497656491311626,0.00117930399400091,42.1991694968551,0,"***"
-"child_relation_with_school",0.277615197537365,0.0122441979143692,22.6732040333625,5.58841389988164e-113,"***"
-"R-squared",0.0147662746527061,NA,NA,NA,""
-"Adj. R-squared",0.01473755063739,NA,NA,NA,""
-"F-statistic",514.074181138375,NA,NA,NA,""
-"Observations",34302,NA,NA,NA,""

@@ -1,5 +1,0 @@
-work_type_f,responsible_social_contribution_mean,responsible_social_contribution_sd,academic_performance_mean,academic_performance_sd,alternative_factors_mean,alternative_factors_sd,relation_with_school_mean,relation_with_school_sd,child_relation_with_school_mean,child_relation_with_school_sd,school_type_mean,school_type_sd,house_environment_mean,house_environment_sd,control_predictor_trad_mean,control_predictor_trad_sd,n
-Animal,0.148,0.16,-0.007,0.336,0.059,0.144,-0.003,0.129,0.019,0.102,-0.036,0.197,0.255,0.486,0.187,0.532,4065
-Farm,0.018,0.196,0.033,0.359,0.058,0.137,0.006,0.112,0.026,0.093,-0.034,0.2,0.235,0.463,0.368,0.669,12708
-Business,0.05,0.191,0.206,0.486,0.121,0.143,0.004,0.107,0.05,0.08,-0.01,0.177,0.44,0.494,0.748,0.94,6927
-Salary,0.086,0.206,0.393,0.597,0.146,0.141,0.009,0.099,0.063,0.07,-0.01,0.196,0.522,0.483,0.989,0.933,10602
